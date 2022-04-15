@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.harvard.mcz</groupId>
 	<artifactId>nameTools</artifactId>
-	<version>0.0.6</version>
+	<version>0.1.0</version>
 	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -66,6 +66,11 @@
 						<goals>
 							<goal>single</goal>
 						</goals>
+						<configuration>
+						   <!-- indexfungorum.cabi.fungusserver path names often larger than 100 characters. -->
+						   <tarLongFileMode>gnu</tarLongFileMode>
+						   <!-- GNU extensions are used for any paths greater than the maximum. -->
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

@@ -22,11 +22,15 @@
  * OF CALIFORNIA HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT,
  * UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
- 
 package org.filteredpush.util;
 
 import java.util.Map;
 
+/**
+ * 
+ * @author Lei Dou
+ *
+ */
 public class CurationCommentType {
 
     String status;

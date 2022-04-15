@@ -2,6 +2,11 @@ package org.filteredpush.util;
 
 import java.util.LinkedHashMap;
 
+/**
+ * 
+ * @author Lei Dou
+ *
+ */
 public class CurationComment {
 
 	public static CurationCommentType construct(CurationStatus status,String details,String source) {

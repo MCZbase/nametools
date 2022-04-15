@@ -1,3 +1,20 @@
+/** 
+ * WoRMSDataSource.java 
+ * 
+ * Copyright 2015 President and Fellows of Harvard College
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package edu.harvard.mcz.nametools;
 
 import java.io.FileWriter;
@@ -30,6 +47,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 	private static final Log log = LogFactory.getLog(WoRMSDataSource.class);
 	
 	private AphiaNameServicePortTypeProxy wormsService;
+	protected AuthorNameComparator authorNameComparator;
 	
 	protected ICsvListWriter listWriter;
 	protected int depth;
@@ -45,6 +63,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 		URL test = new URL(wormsService.getEndpoint());
 		URLConnection conn = test.openConnection();
 		conn.connect();
+		authorNameComparator = new ICZNAuthorNameComparator(.75d,.5d);
 		
 		// create a csv writer, configured to use a comma separator and to force all columns 
 		// except valid_catalog_term_fg to be quoted.
@@ -234,6 +253,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 		try {
 			String taxonName = taxonNameToValidate.getScientificName();
 			String authorship = taxonNameToValidate.getAuthorship();
+			taxonNameToValidate.setAuthorComparator(authorNameComparator);
 			AphiaRecord[] resultsArr = wormsService.getAphiaRecords(taxonName, false, false, false, 1);
 			if (resultsArr!=null && resultsArr.length>0) { 
 				// We got at least one result
@@ -257,7 +277,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 					    		// If one of the results is an exact match on scientific name and authorship, pick that one. 
 					    		result = new NameUsage(ar);
 					    		result.setInputDbPK(taxonNameToValidate.getInputDbPK());
-					    		result.setMatchDescription(NameUsage.MATCH_EXACT);
+					    		result.setMatchDescription(NameComparison.MATCH_EXACT);
 					    		result.setAuthorshipStringEditDistance(1d);
 					    		result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 					    		result.setOriginalScientificName(taxonNameToValidate.getScientificName());
@@ -278,17 +298,17 @@ public class WoRMSDataSource implements Harvester, Validator {
 							ar = im.next();
 							NameUsage current = new NameUsage(ar);
 						    names.append("; ").append(current.getScientificName()).append(" ").append(current.getAuthorship()).append(" ").append(current.getUnacceptReason()).append(" ").append(current.getTaxonomicStatus());
-							if (closest.calulateSimilarityOfAuthor(authorship) < current.calulateSimilarityOfAuthor(authorship)) { 
+							if (ICZNAuthorNameComparator.calulateSimilarityOfAuthor(closest.getAuthorship(), authorship) < ICZNAuthorNameComparator.calulateSimilarityOfAuthor(current.getAuthorship(), authorship)) { 
 								closest = current;
 							}
 						}
 						result = closest;
 					    result.setInputDbPK(taxonNameToValidate.getInputDbPK());
-					    result.setMatchDescription(NameUsage.MATCH_MULTIPLE + " " + names.toString());
+					    result.setMatchDescription(NameComparison.MATCH_MULTIPLE + " " + names.toString());
 					    result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 					    result.setOriginalScientificName(taxonNameToValidate.getScientificName());
 					    result.setScientificNameStringEditDistance(1d);
-					    result.setAuthorshipStringEditDistance(taxonNameToValidate.calulateSimilarityOfAuthor(result.getAuthorship()));
+					    result.setAuthorshipStringEditDistance(ICZNAuthorNameComparator.calulateSimilarityOfAuthor(taxonNameToValidate.getAuthorship(), result.getAuthorship()));
 					}
 				} else { 
 				  // we got exactly one result
@@ -299,7 +319,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 							// scientific name and authorship are an exact match 
 							result = new NameUsage(ar);
 							result.setInputDbPK(taxonNameToValidate.getInputDbPK());
-							result.setMatchDescription(NameUsage.MATCH_EXACT);
+							result.setMatchDescription(NameComparison.MATCH_EXACT);
 							result.setAuthorshipStringEditDistance(1d);
 							result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 							result.setOriginalScientificName(taxonNameToValidate.getScientificName());
@@ -307,11 +327,13 @@ public class WoRMSDataSource implements Harvester, Validator {
 						} else {
 							// find how 
 							if (authorship!=null && ar!=null && ar.getAuthority()!=null) { 
-								double similarity = taxonNameToValidate.calulateSimilarityOfAuthor(ar.getAuthority());
+								//double similarity = taxonNameToValidate.calulateSimilarityOfAuthor(ar.getAuthority());
 								log.debug(authorship);
 								log.debug(ar.getAuthority());
+								NameComparison comparison = authorNameComparator.compare(authorship, ar.getAuthority());
+								String match = comparison.getMatchType();
+								double similarity = comparison.getSimilarity();
 								log.debug(similarity);
-								String match = NameUsage.compare(authorship, ar.getAuthority());
 								//if (match.equals(NameUsage.MATCH_DISSIMILAR) || match.equals(NameUsage.MATCH_ERROR)) {
 									// result.setMatchDescription("Same name, authorship different");
 								//} else { 
@@ -348,7 +370,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 							AphiaRecord ar = im.next();
 							if (ar!=null) { 
 								NameUsage match = new NameUsage(ar);
-								double similarity = taxonNameToValidate.calulateSimilarityOfAuthor(match.getAuthorship());
+								double similarity = ICZNAuthorNameComparator.calulateSimilarityOfAuthor(taxonNameToValidate.getAuthorship(), match.getAuthorship());
 								match.setAuthorshipStringEditDistance(similarity);
 								log.debug(match.getScientificName());
 								log.debug(match.getAuthorship());
@@ -361,8 +383,8 @@ public class WoRMSDataSource implements Harvester, Validator {
 						log.debug("Fuzzy Matches: " + potentialMatches.size());
 						if (potentialMatches.size()==1) { 
 							result = potentialMatches.get(0);
-							String authorComparison = NameUsage.compare(taxonNameToValidate.getAuthorship(), result.getAuthorship());
-							result.setMatchDescription(NameUsage.MATCH_FUZZY_SCINAME + "; authorship " + authorComparison);
+							String authorComparison = authorNameComparator.compare(taxonNameToValidate.getAuthorship(), result.getAuthorship()).getMatchType();
+							result.setMatchDescription(NameComparison.MATCH_FUZZY_SCINAME + "; authorship " + authorComparison);
 							result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 							result.setOriginalScientificName(taxonNameToValidate.getScientificName());
 							result.setInputDbPK(taxonNameToValidate.getInputDbPK());

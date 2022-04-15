@@ -1,10 +1,32 @@
+/** 
+ * NameUsage.java 
+ * 
+ * Copyright 2014 Global Biodiversity Information Facility (GBIF)
+ * Copyright 2015 President and Fellows of Harvard College
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package edu.harvard.mcz.nametools;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.gbif.api.model.checklistbank.ParsedName;
+import org.gbif.api.model.common.LinneanClassification;
+import org.gbif.api.util.ClassificationUtils;
+import org.gbif.api.vocabulary.Rank;
 import org.gbif.nameparser.NameParser;
 import org.gbif.nameparser.UnparsableException;
 import org.json.simple.JSONObject;
@@ -23,7 +45,7 @@ import org.supercsv.util.CsvContext;
  * returned from GBIF's API, with extensions to support similar data objects returned by 
  * the WoRMS aphia API, and by IndexFungorum, along with extensions to support metadata about 
  * an original pre-validation record and the comparision between pre- and post- validation 
- * records.
+ * records.  Derived in part from the GBIF api class of the same name.
  * 
  * Has responsibility for NameUsage data objects, serialization of those objects, comparison 
  * between values (e.g. authorships) between name usages, and assertion of constants describing
@@ -31,53 +53,39 @@ import org.supercsv.util.CsvContext;
  * 
  * @author mole
  *
- * $Id: NameUsage.java 453 2015-03-24 00:39:18Z mole $ 
+ * $Id: NameUsage.java 458 2015-03-26 13:41:02Z mole $ 
  */
-public class NameUsage  {
+public class NameUsage implements LinneanClassification {
 	
-	public static final String MATCH_ERROR = "Error in making comparison";
-	public static final String MATCH_CONNECTFAILURE = "Error connecting to service";
-	public static final String MATCH_EXACT = "Exact Match";
-	public static final String MATCH_MULTIPLE = "Multiple Matches:";
-	public static final String MATCH_ADDSAUTHOR = "Author Added";
-	public static final String MATCH_AUTHSIMILAR = "Author Similar";
-	public static final String MATCH_PARENTHESIESDIFFER = "Differ only in Parenthesies";
-	public static final String MATCH_EXACTADDSYEAR = "Exact Author, Year Added";
-	public static final String MATCH_EXACTMISSINGYEAR = "Exact Author, Year Removed";
-	public static final String MATCH_EXACTDIFFERENTYEAR = "Exact Author, Years Different";
-	public static final String MATCH_SIMILARADDSYEAR = "Similar Author, Year Added";
-	public static final String MATCH_SIMILARMISSINGYEAR = "Similar Author, Year Removed";
-	public static final String MATCH_SIMILAREXACTYEAR = "Similar Author, Year Exact";
-	public static final String MATCH_WEAKEXACTYEAR = "Slightly Similar Author, Year Exact";
-	public static final String MATCH_SOWERBYEXACTYEAR = "Specifying Which Sowerby, Year Exact";
-	public static final String MATCH_DISSIMILAR = "Author Dissimilar";
-	public static final String MATCH_FUZZY_SCINAME = "Fuzzy Match on Scientific Name";
+	private static final Log log = LogFactory.getLog(NameUsage.class);
 	
-	private int key;
-	private int acceptedKey;
-	private String datasetKey;
-	private int parentKey;
+	private int key;  // GBIF key
+	private int acceptedKey;  // GBIF pointer to accepted name record
+	private String datasetKey;  // GBIF dataset
+	private int parentKey;  // GBIF pointer to parent record in taxonomic heirarchy
 	private String parent;
-	private String acceptedName;
+	private String acceptedName;  
 	private String scientificName;
 	private String canonicalName;
-	private String authorship;
+	private String authorship;  // authorship string to accompany the scientificName 
 	private String taxonomicStatus;
 	private String rank;
-	private String kingdom;
-	private String phylum;
-	private String tclass;
-	private String order;
-	private String family;
-	private String genus;
+	private String kingdom;  // classification
+	private String phylum;   // classification
+	private String tclass;   // classification
+	private String order;    // classification
+	private String family;   // classification
+	private String genus;    // classification
+	private String subgenus; // classification
+	private String species;  // classification, the binomial
 	private int numDescendants;
 	private String sourceID;
 	private String link;
-	private String sourceAuthority;
-	private String unacceptReason;
-	private String guid;  
+	private String sourceAuthority;  // Aphia metadata
+	private String unacceptReason;   // Aphia metadata
+	private String guid;             // GUID for the name usage
 	
-	private String matchDescription;  // metadata, 
+	private String matchDescription;  // metadata, description of the match between this name usage annd the original
 	private double authorshipStringSimilarity;
 	private double scientificNameStringSimilarity;
 	
@@ -89,15 +97,22 @@ public class NameUsage  {
 	protected CsvEncoder encoder;
 	protected CsvContext briefContext = null;
 	
+	protected AuthorNameComparator authorComparator;
+	
 	public NameUsage() { 
+		authorComparator = new ICZNAuthorNameComparator(.75d,.5d);
 	}
 	
 	/**
-	 * Construct a NameUsage insatnce with a given source authority.
+	 * Construct a NameUsage instance with a given source authority
+	 * and authorship comparator.
 	 * 
-	 * @param sourceAuthority
+	 * @param sourceAuthority the source authority for the name usage.
+	 * @param authorNameComparator the comparator to use when making comparisons
+	 * of authors with this name usage.
 	 */
-	public NameUsage(String sourceAuthority) { 
+	public NameUsage(String sourceAuthority, AuthorNameComparator authorNameComparator) {
+		this.authorComparator = authorNameComparator;
 		this.sourceAuthority = sourceAuthority;
 	}
 	
@@ -108,6 +123,7 @@ public class NameUsage  {
 	 * @param record an AphiaRecord from WoRMS.
 	 */
 	public NameUsage(AphiaRecord record) {
+		authorComparator = new ICZNAuthorNameComparator(.75d,.5d);
 		this.setSourceAuthority("WoRMS (World Register of Marine Species)");
 		this.setScientificName(record.getScientificname());
 		this.setRank(record.getRank());
@@ -124,123 +140,30 @@ public class NameUsage  {
 		this.setUnacceptReason(record.getUnacceptreason());
 	}
 	
-	public static double stringSimilarity(String string1, String string2) {
-		double result = 0d;
-		String longer = string1;
-		String shorter = string2;
-		if (string1.length() < string2.length()) {
-			// flip so that longer string is the longest.
-			longer = string2;
-			shorter = string1;
-		}
-		if (longer.length() == 0) { 
-			result =  1.0; 
-		} else { 
-			result =  (longer.length() - StringUtils.getLevenshteinDistance(longer, shorter)) / (double) longer.length();
-		}
-		return result;
-	}	
-	
-	public double calulateSimilarityOfAuthor(String toOtherAuthor) { 
-		String au = toOtherAuthor.toLowerCase().replaceAll("[, ]", "");
-		String au1 = this.getAuthorship().toLowerCase().replaceAll("[, ]", "");
-		return NameUsage.stringSimilarity(au, au1);
-	}
-
-	public double calulateSimilarityOfAuthorAlpha(String toOtherAuthor) { 
-		String au = toOtherAuthor.toLowerCase().replaceAll("[^A-Za-z]", "");
-		String au1 = this.getAuthorship().toLowerCase().replaceAll("[^A-Za-z]", "");
-		return NameUsage.stringSimilarity(au, au1);
-	}
-
-	public double calulateSimilarityOfAuthorYear(String toOtherAuthor) { 
-		String au = toOtherAuthor.toLowerCase().replaceAll("[^0-9]", "");
-		String au1 = this.getAuthorship().toLowerCase().replaceAll("[^0-9]", "");
-		return NameUsage.stringSimilarity(au, au1);
-	}
-	
-	public static boolean calculateHasYear(String authorship) { 
-		boolean result = false;
-		if (authorship!=null && authorship.replaceAll("[^0-9]", "").length()==4) { 
-			result = true;
-		}
-		return result;
-	}
-	public static boolean calculateHasParen(String authorship) { 
-		boolean result = false;
-		if (authorship!=null && authorship.replaceAll("[^()]", "").length()==2) { 
-			result = true;
-		}
-		return result;
-	}
-	
 	/**
-	 * Compare two authorship strings, and assert a comparison between the
-	 * two in the form of a String from one of the NameUsage.MATCH_ constants.
+	 * Construct a NameUsage instance from a gbif checklistbank NameUsage instance.
 	 * 
-	 * @param anAuthor
-	 * @param toOtherAuthor
-	 * @return a string description classifying the match between the two 
-	 * authorship strings, with awareness of string distance, parenthesies, and year.
+	 * @param record a gbif Checklist API NameUsage.
+	 * @see org.gbif.api.model.checklistbank.NameUsage
 	 */
-	public static String compare(String anAuthor, String toOtherAuthor) {
-		double similarityThreshold = .75d;
-		double weakThreshold = .5d;
-		
-		String result = NameUsage.MATCH_ERROR;
-		if (anAuthor==null || toOtherAuthor==null) {
-		    result = NameUsage.MATCH_ERROR;
+	public NameUsage(org.gbif.api.model.checklistbank.NameUsage record) {
+		if (record.getDatasetKey().equals(GBIFDataSource.KEY_GBIFBACKBONE)) { 
+		    this.setSourceAuthority("GBIF Backbone Taxonomy");
 		} else { 
-			if (anAuthor.equals(toOtherAuthor) 
-					|| anAuthor.toLowerCase().replaceAll("[ .,]", "").equals(toOtherAuthor.toLowerCase().replaceAll("[ .,]", ""))) 
-			{ 
-				result = NameUsage.MATCH_EXACT;
-			} else {
-				if (anAuthor.length()==0 && toOtherAuthor.length()> 0 ) { 
-					result = NameUsage.MATCH_ADDSAUTHOR;
-				} else { 
-					NameUsage test = new NameUsage();
-					test.setAuthorship(anAuthor);
-					double similarity = test.calulateSimilarityOfAuthor(toOtherAuthor);
-					if (similarity > similarityThreshold) { 
-						result = NameUsage.MATCH_AUTHSIMILAR;  
-					} else { 
-						result = NameUsage.MATCH_DISSIMILAR;
-					}
-					double similarityAlpha = test.calulateSimilarityOfAuthorAlpha(toOtherAuthor);
-					double similarityYear = test.calulateSimilarityOfAuthorYear(toOtherAuthor);
-					boolean parenSame = NameUsage.calculateHasParen(anAuthor)==NameUsage.calculateHasParen(toOtherAuthor);
-					
-					if ((similarityAlpha==1d) && parenSame && similarityYear==0d) { 
-						if (NameUsage.calculateHasYear(anAuthor) && !NameUsage.calculateHasYear(toOtherAuthor)) { 
-							result = NameUsage.MATCH_EXACTMISSINGYEAR;
-						}
-						if (!NameUsage.calculateHasYear(anAuthor) && NameUsage.calculateHasYear(toOtherAuthor)) { 
-							result = NameUsage.MATCH_EXACTADDSYEAR;
-						}
-					} else { 
-					    if (parenSame && (similarityAlpha==1d) && (similarityYear < 1d) ) { 
-						result = NameUsage.MATCH_EXACTDIFFERENTYEAR;
-					   }
-					}
-					if (parenSame && (similarityYear==1d) && similarityAlpha > weakThreshold ) { 
-						result = NameUsage.MATCH_WEAKEXACTYEAR;
-					}
-					if (parenSame && (similarityYear==1d) && similarityAlpha > similarityThreshold ) { 
-						result = NameUsage.MATCH_SIMILAREXACTYEAR;
-					}
-					if (parenSame && (similarityYear==1d) && similarityAlpha < 1d && anAuthor.contains("Sowerby,") && toOtherAuthor.contains("Sowerby I")) { 
-						result = NameUsage.MATCH_SOWERBYEXACTYEAR;
-					}
-					
-					if (!parenSame && (similarityYear==1d && similarityAlpha==1d)) { 
-						result = NameUsage.MATCH_PARENTHESIESDIFFER;
-					}
-				}
-			}
+			this.setSourceAuthority("GBIF Dataset " + record.getDatasetKey());
 		}
-		return result;
+		this.setScientificName(record.getScientificName());
+		this.setRank(record.getRank().getMarker());
+		this.setAuthorship(record.getAuthorship());
+		this.setAcceptedName(record.getAccepted());
+		this.setKingdom(record.getKingdom());
+		this.setPhylum(record.getPhylum());
+		this.setTclass(record.getClazz());
+		this.setOrder(record.getOrder());
+		this.setFamily(record.getFamily());
+		this.setGenus(record.getGenus());		
 	}
+	
 	
 	/**
 	 * Return the value associated with a key from a JSON object, or an empty string if 
@@ -458,6 +381,9 @@ public class NameUsage  {
 	}
 
 	/**
+	 * Return the key that uniquely identifies this name usage 
+	 * (within the datasource).
+	 *
 	 * @return the key
 	 */
 	public int getKey() {
@@ -500,6 +426,8 @@ public class NameUsage  {
 	}
 
 	/**
+	 * Returns the key of the checklist that "hosts" this name usage.
+	 *
 	 * @return the datasetKey
 	 */
 	public String getDatasetKey() {
@@ -556,6 +484,24 @@ public class NameUsage  {
 	 */
 	public void setScientificName(String scientificName) {
 		this.scientificName = scientificName;
+		NameParser parser = new NameParser();
+		try {
+			ParsedName parse  = parser.parse(this.scientificName);
+			if (this.species==null) {
+				if (!parse.getRank().higherThan(Rank.SPECIES)) { 
+				   setSpecies(parse.getGenusOrAbove() + " " + parse.getSpecificEpithet());
+				}
+			} 
+			if (this.genus==null) { 
+				if (!parse.getRank().higherThan(Rank.GENUS)) { 
+					this.setGenus(parse.getGenusOrAbove());
+				}
+			}
+			parse.getScientificName();
+		} catch (UnparsableException e) {
+			log.error(e.getMessage());
+		}
+		
 	}
 
 	/**
@@ -643,9 +589,12 @@ public class NameUsage  {
 	}
 
 	/**
-	 * @return the kingdom
+	 * @return the kingdom or an empty string if kingdom is not set.
 	 */
 	public String getKingdom() {
+		if (kingdom==null) { 
+			return "";
+		}
 		return kingdom;
 	}
 
@@ -883,5 +832,55 @@ public class NameUsage  {
 	 */
 	public void setOriginalAuthorship(String originalAuthorship) {
 		this.originalAuthorship = originalAuthorship;
+	}
+
+	/**
+	 * @return the authorComparator
+	 */
+	public AuthorNameComparator getAuthorComparator() {
+		return authorComparator;
+	}
+
+	/**
+	 * @param authorComparator the authorComparator to set
+	 */
+	public void setAuthorComparator(AuthorNameComparator authorComparator) {
+		this.authorComparator = authorComparator;
+	}
+
+	@Override
+	public String getClazz() {
+		return this.tclass;
+	}
+
+	@Override
+	public void setClazz(String clazz) {
+		this.tclass = clazz;
+	}
+
+	@Override
+	public String getSpecies() {
+		return null;
+	}
+
+	@Override
+	public void setSpecies(String species) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public String getSubgenus() {
+		return this.subgenus;
+	}
+
+	@Override
+	public void setSubgenus(String subgenus) {
+		this.subgenus = subgenus;
+	}
+
+	@Override
+	public String getHigherRank(Rank rank) {
+		return ClassificationUtils.getHigherRank(this, rank);
 	}
 }

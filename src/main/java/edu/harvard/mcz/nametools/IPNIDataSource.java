@@ -1,5 +1,19 @@
-/**
+/** 
+ * IPNIDataSource.java 
  * 
+ * Copyright 2015 President and Fellows of Harvard College
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package edu.harvard.mcz.nametools;
 
@@ -10,6 +24,8 @@ import org.filteredpush.util.CurationComment;
 import org.filteredpush.util.CurationException;
 
 /**
+ * DataSource wrapper for IPNI's web service.
+ * 
  * @author mole
  *
  */
@@ -17,16 +33,19 @@ public class IPNIDataSource implements Validator {
 
 	private static final Log log = LogFactory.getLog(IPNIDataSource.class);
 	
+	protected AuthorNameComparator authorNameComparator;
+	
 	protected IPNIService service;
 	
 	public IPNIDataSource() throws CurationException {
 		init();
 	}
 	
-	protected void init() throws CurationException { 
+	protected void init() throws CurationException {
 		service = new IPNIService();
 		// service.setUseCache(false);
 		log.debug(service.simplePlantNameSearch("Quercus alba", "L."));
+		authorNameComparator = new ICNafpAuthorNameComparator(.75d,.5d);
 	}
 	
 	/* (non-Javadoc)
@@ -36,6 +55,7 @@ public class IPNIDataSource implements Validator {
 	public NameUsage validate(NameUsage taxonToValidate) {
 		NameUsage result = null;
 		if (taxonToValidate.getScientificName()!=null) { 
+			taxonToValidate.setAuthorComparator(authorNameComparator);
 			String taxonName = taxonToValidate.getScientificName().trim();
 			String authorship = taxonToValidate.getAuthorship().trim();
 			try {
@@ -54,18 +74,22 @@ public class IPNIDataSource implements Validator {
 					log.debug(service.getCorrectedScientificName());
 					log.debug(service.getCorrectedAuthor());
 					log.debug(service.getLSID());
-					result = new NameUsage();		
+					result = new NameUsage();
+					result.setAuthorComparator(authorNameComparator);
 					result.setGuid(service.getLSID());
 				    result.setScientificName(service.getCorrectedScientificName());
 				    result.setAuthorship(service.getCorrectedAuthor());
 				    result.setOriginalAuthorship(authorship);
 				    result.setOriginalScientificName(taxonName);
 				    result.setInputDbPK(taxonToValidate.getInputDbPK());
-				    double authorSimilarity = taxonToValidate.calulateSimilarityOfAuthor(service.getCorrectedAuthor());
-				    double nameSimilarity = NameUsage.stringSimilarity(taxonName, service.getCorrectedScientificName());
-				    String match = NameUsage.compare(authorship, result.getAuthorship());
+				    double nameSimilarity = ICNafpAuthorNameComparator.stringSimilarity(taxonName, service.getCorrectedScientificName());
+				    NameComparison comparison = authorNameComparator.compare(authorship, result.getAuthorship()); 
+				    //double authorSimilarity = taxonToValidate.calulateSimilarityOfAuthor(service.getCorrectedAuthor());
+				    //String match = authorNameComparator.compare(authorship, result.getAuthorship());
+				    double authorSimilarity = comparison.getSimilarity();
+				    String match = comparison.getMatchType();
 				    if (authorSimilarity==1d && nameSimilarity==1d) { 
-				    	result.setMatchDescription(NameUsage.MATCH_EXACT);
+				    	result.setMatchDescription(NameComparison.MATCH_EXACT);
 				    } else { 
 				    	result.setMatchDescription(match);
 				    }

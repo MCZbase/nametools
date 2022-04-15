@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results id="" name="Tara spinosa" total_number_of_results="1" number_of_results_returned="1" start="0" error_message="" version="1.8.1 rev 1397">
+  <result>
+    <id>11752751</id>
+    <name>Tara spinosa</name>
+    <rank>Species</rank>
+    <name_status>synonym</name_status>
+    <genus>Tara</genus>
+    <species>spinosa</species>
+    <infraspecies_marker></infraspecies_marker>
+    <infraspecies></infraspecies>
+    <author><![CDATA[(Molina)Britton & Rose]]></author>
+    <record_scrutiny_date></record_scrutiny_date>
+    <online_resource></online_resource>
+    <source_database>ILDIS World Database of Legumes</source_database>
+    <source_database_url>http://www.ildis.org</source_database_url>
+    <name_html><![CDATA[<i>Tara spinosa</i> (Molina)Britton & Rose]]></name_html>
+    <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752751</url>
+    <distribution></distribution>
+    <references/>
+    <accepted_name>
+      <id>11478765</id>
+      <name>Caesalpinia spinosa</name>
+      <rank>Species</rank>
+      <name_status>accepted name</name_status>
+      <genus>Caesalpinia</genus>
+      <species>spinosa</species>
+      <infraspecies_marker></infraspecies_marker>
+      <infraspecies></infraspecies>
+      <author>(Molina)Kuntze</author>
+      <record_scrutiny_date>
+        <scrutiny>1994/1995</scrutiny>
+      </record_scrutiny_date>
+      <online_resource><![CDATA[http://www.ildis.org/LegumeWeb?version~10.01&LegumeWeb&tno~586]]></online_resource>
+      <source_database>ILDIS World Database of Legumes</source_database>
+      <source_database_url>http://www.ildis.org</source_database_url>
+      <name_html><i>Caesalpinia spinosa</i> (Molina)Kuntze</name_html>
+      <url>http://www.catalogueoflife.org/col/details/species/id/11478765</url>
+      <distribution>AGE-BA 1178 0; AGE-CH 1313 0; AGE-CN 1301 0; AGE-CO 11856 0; AGE-ER 1314 0; AGE-FO 10881 0; AGE-LP 10880 0; AGE-MI 16161 0; AGS-CB 1179 0; AGS-NE 1261 0; AGS-RN 1262 0; AGS-SC 1335 0; AGS-SF 23019 0; AGW-CA 1342 0; AGW-JU 1432 0; AGW-LR 1350 0; AGW-ME 1397 0; AGW-SA 1334 0; AGW-SE 1294 0; AGW-SJ 1367 0; AGW-SL 1346 0; AGW-TU 1180 0; ALA-OO 22946 0; ARI-OO 1275 0; ARK-OO 22947 0; BOL-OO 1381 0; CAL-OO 1249 0; CLC-BI 1897 0; CLC-CO 12397 0; CLC-LA 1579 0; CLC-MA 16170 0; CLC-OH 16169 0</distribution>
+      <references>
+        <reference>
+          <author>Backer,C.A.</author>
+          <year>1963</year>
+          <title></title>
+          <source>Flora of Java. Groningen, The Netherlands</source>
+        </reference>
+        <reference>
+          <author>Macbride,J.F.</author>
+          <year>1943</year>
+          <title></title>
+          <source>Publ.Field Mus.Nat.Hist.,Bot.Ser.13(3/1):1-506 Leguminosae</source>
+        </reference>
+        <reference>
+          <author><![CDATA[Leon,H. & Alain,H.]]></author>
+          <year>1951</year>
+          <title></title>
+          <source>Flora de Cuba 2:224-367 Leguminosas</source>
+        </reference>
+        <reference>
+          <author>Boeclke,O.</author>
+          <year>1946</year>
+          <title></title>
+          <source>Darwiniana 7(2):240-321 Est. Morfologico Semillas Mim. y Cae</source>
+        </reference>
+      </references>
+      <classification>
+        <taxon>
+          <id>22032971</id>
+          <name>Plantae</name>
+          <rank>Kingdom</rank>
+          <name_html>Plantae</name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22032971</url>
+        </taxon>
+        <taxon>
+          <id>22032972</id>
+          <name>Tracheophyta</name>
+          <rank>Phylum</rank>
+          <name_html>Tracheophyta</name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22032972</url>
+        </taxon>
+        <taxon>
+          <id>22032973</id>
+          <name>Magnoliopsida</name>
+          <rank>Class</rank>
+          <name_html>Magnoliopsida</name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22032973</url>
+        </taxon>
+        <taxon>
+          <id>22034674</id>
+          <name>Fabales</name>
+          <rank>Order</rank>
+          <name_html>Fabales</name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22034674</url>
+        </taxon>
+        <taxon>
+          <id>22034675</id>
+          <name>Fabaceae</name>
+          <rank>Family</rank>
+          <name_html>Fabaceae</name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22034675</url>
+        </taxon>
+        <taxon>
+          <id>22074153</id>
+          <name>Caesalpinia</name>
+          <rank>Genus</rank>
+          <name_html><i>Caesalpinia</i></name_html>
+          <url>http://www.catalogueoflife.org/col/browse/tree/id/22074153</url>
+        </taxon>
+      </classification>
+      <child_taxa/>
+      <synonyms>
+        <synonym>
+          <id>11769410</id>
+          <name>Caesalpinia pectinata</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Caesalpinia</genus>
+          <species>pectinata</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author>Cav.</author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><i>Caesalpinia pectinata</i> Cav.</name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11769410</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11752752</id>
+          <name>Caesalpinia tara</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Caesalpinia</genus>
+          <species>tara</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author><![CDATA[Ruiz & Pav.]]></author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><![CDATA[<i>Caesalpinia tara</i> Ruiz & Pav.]]></name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752752</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11769420</id>
+          <name>Caesalpinia tinctoria</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Caesalpinia</genus>
+          <species>tinctoria</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author>(Kunth)Benth.</author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><i>Caesalpinia tinctoria</i> (Kunth)Benth.</name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11769420</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11752753</id>
+          <name>Caesalpinia tinctoria</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Caesalpinia</genus>
+          <species>tinctoria</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author>DC.</author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><i>Caesalpinia tinctoria</i> DC.</name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752753</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11752750</id>
+          <name>Coulteria tinctoria</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Coulteria</genus>
+          <species>tinctoria</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author>(Molina)Kunth</author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><i>Coulteria tinctoria</i> (Molina)Kunth</name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752750</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11752754</id>
+          <name>Poinciana spinosa</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Poinciana</genus>
+          <species>spinosa</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author>Molina</author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><i>Poinciana spinosa</i> Molina</name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752754</url>
+          <references/>
+        </synonym>
+        <synonym>
+          <id>11752751</id>
+          <name>Tara spinosa</name>
+          <rank>Species</rank>
+          <name_status>synonym</name_status>
+          <sn_id>11478765</sn_id>
+          <genus>Tara</genus>
+          <species>spinosa</species>
+          <infraspecies_marker></infraspecies_marker>
+          <infraspecies></infraspecies>
+          <author><![CDATA[(Molina)Britton & Rose]]></author>
+          <record_scrutiny_date></record_scrutiny_date>
+          <online_resource></online_resource>
+          <name_html><![CDATA[<i>Tara spinosa</i> (Molina)Britton & Rose]]></name_html>
+          <url>http://www.catalogueoflife.org/col/details/species/id/11478765/synonym/11752751</url>
+          <references/>
+        </synonym>
+      </synonyms>
+      <common_names>
+        <common_name>
+          <name>Brasilete De Vuelta Arriba</name>
+          <language></language>
+          <country></country>
+          <references/>
+        </common_name>
+        <common_name>
+          <name>Tara</name>
+          <language></language>
+          <country>Madagascar</country>
+          <references/>
+        </common_name>
+      </common_names>
+    </accepted_name>
+  </result>
+</results>

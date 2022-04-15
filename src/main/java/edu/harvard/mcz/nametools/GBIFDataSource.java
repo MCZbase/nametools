@@ -1,4 +1,19 @@
 /**
+ * GBIFDataSource.java 
+ * 
+ * Copyright 2015 President and Fellows of Harvard College
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  * 
  */
 package edu.harvard.mcz.nametools;
@@ -494,6 +509,7 @@ public class GBIFDataSource implements Harvester, Validator {
 		}
 	}
 
+	@SuppressWarnings("static-access")
 	@Override
 	public NameUsage validate(NameUsage taxonNameToValidate) {
 		NameUsage result = null;
@@ -507,16 +523,21 @@ public class GBIFDataSource implements Harvester, Validator {
 			    Iterator<NameUsage> i = hits.iterator();
 				// One possible match
 				NameUsage potentialMatch = i.next();
+				AuthorNameComparator authorNameComparator = new ICNafpAuthorNameComparator(.75d,.5d);
+				if (potentialMatch.getKingdom().equals("Animalia")) { 
+				    authorNameComparator = new ICZNAuthorNameComparator(.75d,.5d);
+				}
 				if (potentialMatch.getScientificName().equals(taxonName) && potentialMatch.getAuthorship().equals(authorship)) { 
-					potentialMatch.setMatchDescription(NameUsage.MATCH_EXACT);
+					potentialMatch.setMatchDescription(NameComparison.MATCH_EXACT);
 					result = potentialMatch;
 				    result.setAuthorshipStringEditDistance(1d);
 				} else { 
-					double similarity = taxonNameToValidate.calulateSimilarityOfAuthor(potentialMatch.getAuthorship());
+					NameComparison authorComparison = authorNameComparator.compare(authorship, potentialMatch.getAuthorship());
+					double similarity = authorComparison.getSimilarity();
+					String match = authorComparison.getMatchType();
 					log.debug(authorship);
 					log.debug(potentialMatch.getAuthorship());
 					log.debug(similarity);
-					String match = NameUsage.compare(authorship, potentialMatch.getAuthorship());
 					potentialMatch.setMatchDescription(match);
 					result = potentialMatch;
 				    result.setAuthorshipStringEditDistance(similarity);
@@ -543,7 +564,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				    		// If one of the results is an exact match on scientific name and authorship, pick that one. 
 				    		result = potentialMatch;
 				    		result.setInputDbPK(taxonNameToValidate.getInputDbPK());
-				    		result.setMatchDescription(NameUsage.MATCH_EXACT);
+				    		result.setMatchDescription(NameComparison.MATCH_EXACT);
 				    		result.setAuthorshipStringEditDistance(1d);
 				    		result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 				    		result.setOriginalScientificName(taxonNameToValidate.getScientificName());
@@ -563,17 +584,17 @@ public class GBIFDataSource implements Harvester, Validator {
 					while (im.hasNext()) { 
 						NameUsage current = im.next();
 					    names.append("; ").append(current.getScientificName()).append(" ").append(current.getAuthorship()).append(" ").append(current.getUnacceptReason()).append(" ").append(current.getTaxonomicStatus());
-						if (closest.calulateSimilarityOfAuthor(authorship) < current.calulateSimilarityOfAuthor(authorship)) { 
+						if (taxonNameToValidate.getAuthorComparator().calulateSimilarityOfAuthor(closest.getAuthorship(), authorship) < taxonNameToValidate.getAuthorComparator().calulateSimilarityOfAuthor(current.getAuthorship(), authorship)) { 
 							closest = current;
 						}
 					}
 					result = closest;
 				    result.setInputDbPK(taxonNameToValidate.getInputDbPK());
-				    result.setMatchDescription(NameUsage.MATCH_MULTIPLE + " " + names.toString());
+				    result.setMatchDescription(NameComparison.MATCH_MULTIPLE + " " + names.toString());
 				    result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
 				    result.setOriginalScientificName(taxonNameToValidate.getScientificName());
 				    result.setScientificNameStringEditDistance(1d);
-				    result.setAuthorshipStringEditDistance(taxonNameToValidate.calulateSimilarityOfAuthor(result.getAuthorship()));
+				    result.setAuthorshipStringEditDistance(taxonNameToValidate.getAuthorComparator().calulateSimilarityOfAuthor(taxonNameToValidate.getAuthorship(), result.getAuthorship()));
 					}
 				}
 			}
