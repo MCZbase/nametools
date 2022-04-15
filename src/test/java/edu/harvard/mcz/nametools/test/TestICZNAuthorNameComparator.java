@@ -44,19 +44,27 @@ public class TestICZNAuthorNameComparator {
 		assertEquals(NameComparison.MATCH_ADDSAUTHOR, comparator.compare("", "(Conrad, 1833)").getMatchType());
 		
 		assertEquals(NameComparison.MATCH_PARENTHESIESDIFFER, comparator.compare("Schilder, 1922","(Schilder, 1922)").getMatchType()); 
+		assertEquals(NameComparison.MATCH_PARENYEARDIFFER, comparator.compare("Schilder, 1922","(Schilder, 1920)").getMatchType()); 
 		
-		comparator.compare("Myers and D'Attilio","Myers & D'Attilio, 1990"); 
-		comparator.compare("Watson","(Watson, 1881)"); 
-		comparator.compare("L.","Linnaeus, 1758"); 
-		comparator.compare("Linné","Linnaeus, 1758"); 
-		comparator.compare("Linné","Linnaeus"); 
-		comparator.compare("Linné, 1758","Linnaeus, 1758"); 
-		comparator.compare("L.","Lamarck"); 
-		comparator.compare("(Hornung & Mermod, 1925)", "Hornung & Mermod, 1924");
+		comparator.compare("Myers and D'Attilio","Myers & D'Attilio, 1990").getMatchType(); 
+		
+		assertEquals(NameComparison.MATCH_PARENYEARDIFFER,comparator.compare("Watson","(Watson, 1881)").getMatchType()); 
+	    assertEquals(NameComparison.MATCH_L,comparator.compare("L.","Linnaeus, 1758").getMatchType());
+	    
+		assertEquals(NameComparison.MATCH_EXACTADDSYEAR, comparator.compare("Linné","Linnaeus, 1758").getMatchType());
+		
+		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("Linné","Linnaeus").getMatchType()); 
+		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED,comparator.compare("Linné, 1758","Linnaeus, 1758").getMatchType()); 
+		assertEquals(NameComparison.MATCH_PARENYEARDIFFER,comparator.compare("(Hornung & Mermod, 1925)", "Hornung & Mermod, 1924").getMatchType());
 		
 		assertEquals(NameComparison.MATCH_SOWERBYEXACTYEAR, comparator.compare("(Sowerby, 1833)", "(G. B. Sowerby I, 1833)").getMatchType());
 		assertEquals(NameComparison.MATCH_SOWERBYEXACTYEAR, comparator.compare("Sowerby, 1860", "G. B. Sowerby II, 1860").getMatchType());
 		assertEquals(NameComparison.MATCH_SOWERBYEXACTYEAR, comparator.compare("Sowerby, 1892", "G. B. Sowerby III, 1892").getMatchType());
+		
+		assertEquals(NameComparison.MATCH_L_EXACTYEAR, comparator.compare("L., 1758", "Linnaeus, 1758").getMatchType());
+		assertEquals(NameComparison.MATCH_L_EXACTYEAR, comparator.compare("L., 1758", "Linné, 1758").getMatchType());
+		assertEquals(NameComparison.MATCH_L_EXACTYEAR, comparator.compare("L., 1758", "Linne, 1758").getMatchType());
+		assertEquals(NameComparison.MATCH_L_EXACTYEAR, comparator.compare("L.", "Lamarck").getMatchType());
 	}
 
 	@Test

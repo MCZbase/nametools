@@ -12,7 +12,22 @@ public class NameComparison {
 	public static final String MATCH_CONNECTFAILURE = "Error connecting to service";
 	public static final String MATCH_FUZZY_SCINAME = "Fuzzy Match on Scientific Name";
 	public static final String MATCH_DISSIMILAR = "Author Dissimilar";
+	public static final String MATCH_STRONGDISSIMILAR = "Author Strongly Dissimilar";
+	/**
+	 * Zoological, "Sowerby" in one case, Sowerby I, Sowerby II, or Sowerby III in the other,
+	 * specification of which of the Sowerby family was the author was added.
+	 */
 	public static final String MATCH_SOWERBYEXACTYEAR = "Specifying Which Sowerby, Year Exact";
+	/**
+	 * Zoological, L. may be abbreviation for Linnaeus or Lamarck.
+	 * Does not apply to Botany.
+	 */
+	public static final String MATCH_L_EXACTYEAR = "Ambiguous L., Year Exact";
+	/**
+	 * Zoological, L. may be abbreviation for Linnaeus or Lamarck.
+	 * Does not apply to Botany.
+	 */
+	public static final String MATCH_L = "Ambiguous L.";
 	public static final String MATCH_WEAKEXACTYEAR = "Slightly Similar Author, Year Exact";
 	public static final String MATCH_SIMILAREXACTYEAR = "Similar Author, Year Exact";
 	public static final String MATCH_SIMILARMISSINGYEAR = "Similar Author, Year Removed";
@@ -21,6 +36,7 @@ public class NameComparison {
 	public static final String MATCH_EXACTMISSINGYEAR = "Exact Author, Year Removed";
 	public static final String MATCH_EXACTADDSYEAR = "Exact Author, Year Added";
 	public static final String MATCH_PARENTHESIESDIFFER = "Differ only in Parenthesies";
+	public static final String MATCH_PARENYEARDIFFER = "Differ in Parenthesies and Year";
 	public static final String MATCH_AUTHSIMILAR = "Author Similar";
 	public static final String MATCH_ADDSAUTHOR = "Author Added";
 	public static final String MATCH_MULTIPLE = "Multiple Matches:";
@@ -30,6 +46,11 @@ public class NameComparison {
 	 * different from "x ex y" or (x) y ex z", but not different in this comparison from "(a) b".
 	 */
 	public static final String MATCH_PARTSDIFFER = "Authorship botanical parts tokenize differently";
+    /**
+     * Authorship strings appear similar (parenthesies, botanical functional parts), but the differences
+     * between the strings can be explained by differences in abbreviation or addition/removal of initials.
+     */
+	public static final String MATCH_SAMEBUTABBREVIATED = "Same Author, but abbreviated differently.";
 	
 	private String nameOne;
 	private String nameTwo;

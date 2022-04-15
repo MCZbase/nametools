@@ -18,9 +18,13 @@
 package edu.harvard.mcz.nametools;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -82,8 +86,10 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					result.setSimilarity(similarity);
 					if (similarity > similarityThreshold) { 
 						result.setMatchType(NameComparison.MATCH_AUTHSIMILAR);
-					} else { 
+					} else if (similarity > weakThreshold) { 
 						result.setMatchType(NameComparison.MATCH_DISSIMILAR);
+					} else { 
+						result.setMatchType(NameComparison.MATCH_STRONGDISSIMILAR);
 					}
 					double similarityAlpha = AuthorNameComparator.calulateSimilarityOfAuthorAlpha(anAuthor, toOtherAuthor);
 					boolean parenSame = ICNafpAuthorNameComparator.calculateHasParen(anAuthor)==ICNafpAuthorNameComparator.calculateHasParen(toOtherAuthor);
@@ -93,6 +99,10 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					List<String> toOtherAuthorBits = tokenizeAuthorship(toOtherAuthor);
 					if (anAuthorBits.size() != toOtherAuthorBits.size()) { 
 						result.setMatchType(NameComparison.MATCH_PARTSDIFFER);
+					} else { 
+						if (ICNafpAuthorNameComparator.matchedOnWordsInTokens(anAuthor, toOtherAuthor)) { 
+							result.setMatchType(NameComparison.MATCH_SAMEBUTABBREVIATED);
+						}
 					}
 					
 					if (anAuthor.contains(" ex ") && !toOtherAuthor.contains(" ex ")) { 
@@ -114,6 +124,151 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 		return result;
 	}	
 	
+	/**
+	 * Compare the two author strings to see if they look like differeing abbreviations
+	 * of the same set of authors in the same semantic positions (comparing each 
+	 * parenthetical author, ex author, sanctioning author, etc separately.
+	 * 
+	 * @param anAuthor 
+	 * @param toOtherAuthor 
+	 * 
+	 * @return true if each semantic piece of the two author strings is the same, or if 
+	 * each semantic piece appears to be an abbreviation of the corresponding semantic piece
+	 * otherwise return false. 
+	 */
+	public static boolean matchedOnWordsInTokens(String anAuthor, String toOtherAuthor) {
+		boolean result = false;
+		List<String> anAuthorBits = tokenizeAuthorship(anAuthor);
+		List<String> toOtherAuthorBits = tokenizeAuthorship(toOtherAuthor);
+System.out.println (anAuthor + " " + toOtherAuthor + " " + anAuthorBits.size() + " " + toOtherAuthorBits.size()); 
+		if (anAuthorBits.size() == toOtherAuthorBits.size()) { 
+			Iterator<String> iA = anAuthorBits.iterator();
+			Iterator<String> iO = toOtherAuthorBits.iterator();
+			boolean foundMissmatch = false;
+			while (iA.hasNext()) { 
+				String anAuthorBit = iA.next();
+				String toOtherAuthorBit = iO.next();
+			    String shorter = anAuthorBit;
+			    String longer = toOtherAuthorBit;
+	    		if (anAuthorBit.length() > toOtherAuthorBit.length()) { 
+    				shorter = toOtherAuthorBit;
+				    longer = anAuthorBit;
+			    }
+	    		if (shorter.length()<longer.length()) { 
+	    			if (!shorter.endsWith(".") && !longer.contains(".")) {
+	    				// if the shorter of the two bits doesn't end with a period 
+	    				// and the longer of the two bits doesn't contain a period 
+	    			    // then assume that the shorter isn't an abbreviation and 
+	    				// declare a missmatch.
+	    				foundMissmatch = true;
+System.out.println('1' + shorter + " " + longer);	    				
+	    			}
+	    		}
+				if (!anAuthorBit.equals(toOtherAuthorBit)) {
+					// Check if initials are the same
+					String initA = extractInitials(anAuthorBit);
+					String initO = extractInitials(toOtherAuthorBit);
+					if (!initA.equals(initO)) { 
+						if (initA.length()==initO.length() && initA.length()>0) { 
+							foundMissmatch = true;
+System.out.println('2' + anAuthorBit + " " + toOtherAuthorBit);	    				
+						}
+					}
+					// remove punctuation.
+		 			anAuthorBit = anAuthorBit.replaceAll("[^A-Za-z ::alpha::]", " ");
+					toOtherAuthorBit = toOtherAuthorBit.replaceAll("[^A-Za-z ::alpha::]", " ");
+					if (anAuthorBit.trim().equals("L") && toOtherAuthorBit.equals("Lamarck")) { 
+						// Special case, botany, fail
+						foundMissmatch = true;
+					}
+					if (anAuthorBit.trim().equals("Lamarck") && toOtherAuthorBit.equals("L")) { 
+						// Special case, botany, fail
+						foundMissmatch = true;
+					}
+					// remove single letters
+					anAuthorBit = anAuthorBit.replaceAll("^[A-Z] ", " ");
+					anAuthorBit = anAuthorBit.replaceAll(" [A-Z] ", " ");
+					anAuthorBit = anAuthorBit.replaceAll(" [A-Z]$", " ");
+					toOtherAuthorBit = toOtherAuthorBit.replaceAll("^[A-Z] ", " ");
+					toOtherAuthorBit = toOtherAuthorBit.replaceAll(" [A-Z] ", " ");
+					toOtherAuthorBit = toOtherAuthorBit.replaceAll(" [A-Z]$", " ");
+					anAuthorBit = anAuthorBit.trim();
+					toOtherAuthorBit = toOtherAuthorBit.trim();
+					// remove double spaces
+					anAuthorBit = anAuthorBit.replaceAll("  ", " ").trim();
+					toOtherAuthorBit = toOtherAuthorBit.replaceAll("  ", " ").trim();
+					List<String> anAuthorSubBits = Arrays.asList(anAuthorBit.trim().split(" "));
+					List<String> toOtherAuthorSubBits = Arrays.asList(toOtherAuthorBit.trim().split(" "));
+					if (anAuthorSubBits.size()!=toOtherAuthorSubBits.size()) { 
+	    				foundMissmatch = true;
+System.out.println('3' + anAuthorBit + " " + toOtherAuthorBit);	    				
+					} else { 
+						Iterator<String> iAsb = anAuthorSubBits.iterator();
+						Iterator<String> iOsb = toOtherAuthorSubBits.iterator();
+						while (iAsb.hasNext()) { 
+							String subBit = iAsb.next();
+							String otherSubBit = iOsb.next();
+System.out.println(' ' + subBit + " " + otherSubBit);	    				
+							if (!compareSameOrStartsWith(subBit,otherSubBit)) { 
+								foundMissmatch = true;
+System.out.println('4' + anAuthorBit + " " + toOtherAuthorBit);	    				
+							}
+						}
+					}
+				}
+			}
+			result = !foundMissmatch;
+		}
+System.out.println(">> "+ result);	    				
+		return result;
+	}
+	
+	/**
+	 * Given a string, return any initials from that string.
+	 * @param name
+	 * @return
+	 */
+	public static String extractInitials(String name) { 
+		StringBuffer result = new StringBuffer();
+		Pattern p = Pattern.compile("(^| |\\()[A-Z]\\.");
+		Matcher matcher = p.matcher(name.replaceAll("\\.", ". "));
+		while (matcher.find()) { 
+			String match = matcher.group();
+			result.append(match.replaceAll("[^A-Z]", ""));
+		}
+		return result.toString();
+	}
+	
+	/**
+	 * Compare to strings to see if they are the same or if the longer starts with
+	 * the shorter.  Special case, "L." is not same or starts with "Lamarck".
+	 * 
+	 * @param aString
+	 * @param anotherString
+	 * @return true if the two strings are the same, or if the longer of the two strings
+	 * starts with the shorter of the two strings.
+	 */
+	public static boolean compareSameOrStartsWith(String aString, String anotherString) { 
+		boolean result = false;
+		if (aString.equals(anotherString)) { 
+		   result = true;	
+		} else {
+			String shorter = aString;
+			String longer = anotherString;
+			if (aString.length() > anotherString.length()) { 
+				shorter = anotherString;
+				longer = aString;
+			}
+			if (longer.startsWith(shorter)) { 
+				result = true;
+			}
+		    // Special case, for botany, L doesn't abbreviate Lamarck, only Linnaeus:
+		    if (shorter.equals("L") && longer.equals("Lamarck")) { 
+		    	result = false;
+		    }
+		}
+		return result;
+	}
 	
 	/**
 	 * Given a botanical authorship string, split it into a list of component 

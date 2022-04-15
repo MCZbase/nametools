@@ -69,15 +69,15 @@ public class ICZNAuthorNameComparator extends AuthorNameComparator {
 				} else { 
 					NameUsage test = new NameUsage();
 					test.setAuthorship(anAuthor);
-					double similarity = this.calulateSimilarityOfAuthor(anAuthor, toOtherAuthor);
+					double similarity = ICZNAuthorNameComparator.calulateSimilarityOfAuthor(anAuthor, toOtherAuthor);
 					result.setSimilarity(similarity);
 					if (similarity > similarityThreshold) { 
 						result.setMatchType(NameComparison.MATCH_AUTHSIMILAR);
 					} else { 
 						result.setMatchType(NameComparison.MATCH_DISSIMILAR);
 					}
-					double similarityAlpha = this.calulateSimilarityOfAuthorAlpha(anAuthor, toOtherAuthor);
-					double similarityYear = this.calulateSimilarityOfAuthorYear(anAuthor, toOtherAuthor);
+					double similarityAlpha = ICZNAuthorNameComparator.calulateSimilarityOfAuthorAlpha(anAuthor, toOtherAuthor);
+					double similarityYear = ICZNAuthorNameComparator.calulateSimilarityOfAuthorYear(anAuthor, toOtherAuthor);
 					boolean parenSame = ICZNAuthorNameComparator.calculateHasParen(anAuthor)==ICZNAuthorNameComparator.calculateHasParen(toOtherAuthor);
 					
 					if ((similarityAlpha==1d) && parenSame && similarityYear==0d) { 
@@ -101,8 +101,26 @@ public class ICZNAuthorNameComparator extends AuthorNameComparator {
 					if (parenSame && (similarityYear==1d) && similarityAlpha < 1d && anAuthor.contains("Sowerby,") && toOtherAuthor.contains("Sowerby I")) { 
 						result.setMatchType(NameComparison.MATCH_SOWERBYEXACTYEAR);
 					}
+					if (parenSame && (similarityYear==1d) && similarityAlpha < 1d && anAuthor.contains("L.") && (toOtherAuthor.contains("Lamarck") || toOtherAuthor.contains("Linn"))) { 
+						result.setMatchType(NameComparison.MATCH_L_EXACTYEAR);
+					}
+					if (parenSame && (similarityYear==0d) && similarityAlpha < 1d && anAuthor.contains("L.") && (toOtherAuthor.contains("Lamarck") || toOtherAuthor.contains("Linn"))) { 
+						result.setMatchType(NameComparison.MATCH_L);
+					}
+					if (parenSame && (similarityYear==1d || similarityYear==0d) && similarityAlpha < 1d && ICZNAuthorNameComparator.knownAbbreviation(anAuthor, toOtherAuthor)) {
+						if (similarityYear==0d) { 
+						    if (!ICZNAuthorNameComparator.calculateHasYear(anAuthor) && ICZNAuthorNameComparator.calculateHasYear(toOtherAuthor)) { 
+							   result.setMatchType(NameComparison.MATCH_EXACTADDSYEAR);
+						    }
+						} else { 
+						    result.setMatchType(NameComparison.MATCH_SAMEBUTABBREVIATED);
+						}
+					}					
 					if (!parenSame && (similarityYear==1d && similarityAlpha==1d)) { 
 						result.setMatchType(NameComparison.MATCH_PARENTHESIESDIFFER);
+					}
+					if (!parenSame && (similarityYear<1d && similarityAlpha==1d)) { 
+						result.setMatchType(NameComparison.MATCH_PARENYEARDIFFER);
 					}
 				}
 			}
@@ -110,9 +128,44 @@ public class ICZNAuthorNameComparator extends AuthorNameComparator {
 		return result;
 	}	
 	
+	/**
+	 * Compare the non-numeric (i.e. removing the year if present) parts of two authorship strings.
+	 * 
+	 * @param anAuthor
+	 * @param toOtherAuthor
+	 * @return similarity (in the range 0 to 1) between the two strings.
+	 */
 	public static double calulateSimilarityOfAuthorYear(String anAuthor, String toOtherAuthor) { 
 	    String au = toOtherAuthor.toLowerCase().replaceAll("[^0-9]", "");
 	    String au1 = anAuthor.toLowerCase().replaceAll("[^0-9]", "");
 	    return AuthorNameComparator.stringSimilarity(au, au1);
     }
+	
+	/**
+	 * Return true if anAuthor contains a 4 digit integer that might be a year.
+	 * 
+	 * @param anAuthor to check.
+	 * @return true if author contains 4 numeric digits.
+	 */
+	public static boolean containsYear(String anAuthor) { 
+	    String au = anAuthor.toLowerCase().replaceAll("[^0-9]", "");
+	    return (au.length()==4);
+    }	
+	
+	public static boolean knownAbbreviation(String anAuthor, String toOtherAuthor) { 
+		boolean result = false;
+	    String a = anAuthor.replaceAll("[^A-Za-z'é]", "");
+		String oth = toOtherAuthor.replaceAll("[^A-Za-z'é]", "");
+		String longer = oth;
+		String shorter = a;
+		if (longer.length()<shorter.length()) { 
+			shorter = oth;
+			longer = a;
+		}
+		
+		if (shorter.equals("Linne") && longer.equals("Linnaeus")) { result = true; } 
+		if (shorter.equals("Linné") && longer.equals("Linnaeus")) { result = true; } 
+		if (shorter.equals("d'Orb.") && longer.equals("d'Orbigny")) { result = true; } 
+		return result;
+	}
 }

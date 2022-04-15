@@ -108,6 +108,15 @@ public abstract class AuthorNameComparator {
 		return AuthorNameComparator.stringSimilarity(au, au1);
 	}
 
+	/**
+	 * Return a measure of the similarity between two strings in the range of
+	 * 0 (no similarity) to 1 (exact same strings), using a measure of the
+	 * string edit distance scaled to the length differences of the two strings.
+	 * 
+	 * @param string1
+	 * @param string2
+	 * @return a double in the range 0 to 1.
+	 */
 	public static double stringSimilarity(String string1, String string2) {
 		double result = 0d;
 		String longer = string1;
