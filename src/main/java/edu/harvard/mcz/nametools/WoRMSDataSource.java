@@ -30,15 +30,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.axis.AxisFault;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.gbif.api.model.checklistbank.ParsedName;
 import org.gbif.nameparser.NameParser;
 import org.gbif.nameparser.UnparsableException;
-import org.marinespecies.aphia.v1_0.AphiaNameServicePortTypeProxy;
-import org.marinespecies.aphia.v1_0.AphiaRecord;
-import org.marinespecies.aphia.v1_0.Source;
+import org.marinespecies.aphia.v1_0.model.AphiaRecord;
+import org.marinespecies.aphia.v1_0.model.AphiaRecordsArray;
+import org.marinespecies.aphia.v1_0.model.Source;
+import org.marinespecies.aphia.v1_0.api.SourcesApi;
+import org.marinespecies.aphia.v1_0.api.TaxonomicDataApi;
+import org.marinespecies.aphia.v1_0.handler.ApiException;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.io.ICsvListWriter;
 import org.supercsv.prefs.CsvPreference;
@@ -49,7 +51,8 @@ public class WoRMSDataSource implements Harvester, Validator {
 	
 	private static final Log log = LogFactory.getLog(WoRMSDataSource.class);
 	
-	private AphiaNameServicePortTypeProxy wormsService;
+	private TaxonomicDataApi wormsService;
+	private SourcesApi wormsSourceService;
 	protected AuthorNameComparator authorNameComparator;
 	
 	protected ICsvListWriter listWriter;
@@ -60,10 +63,11 @@ public class WoRMSDataSource implements Harvester, Validator {
 	}
 	
 	protected void init()  throws IOException { 
-		wormsService = new AphiaNameServicePortTypeProxy();
+		wormsService = new TaxonomicDataApi();
+		wormsSourceService = new SourcesApi();
 		depth = 0;
-		log.debug(wormsService.getEndpoint());
-		URL test = new URL(wormsService.getEndpoint());
+		log.debug(wormsService.getApiClient().getBasePath());
+		URL test = new URL(wormsService.getApiClient().getBasePath());
 		URLConnection conn = test.openConnection();
 		conn.connect();
 		authorNameComparator = new ICZNAuthorNameComparator(.75d,.5d);
@@ -108,46 +112,50 @@ public class WoRMSDataSource implements Harvester, Validator {
 	public void getAllChildren(String taxon) { 
 		boolean marineOnly = false;
 			try {
-				int taxonid = wormsService.getAphiaID(taxon, marineOnly);
+				int taxonid = wormsService.aphiaIDByName(taxon, marineOnly);
 				log.debug(taxonid);
 				getAllChildren(taxonid, marineOnly);
-			} catch (RemoteException e) {
+			} catch (ApiException e) {
 				log.debug(e.getMessage());
 			}
 	}
 	
 	protected AphiaRecord[] populateChildrenArray(int taxonid, boolean marineOnly) throws RemoteException { 
-		AphiaRecord[] childrenArray = wormsService.getAphiaChildrenByID(taxonid, 0, marineOnly);
-		if (childrenArray!=null) { 
-			int count = childrenArray.length;
-			if (count==50) {
-				// there might be more records
-				ArrayList<AphiaRecord> children = new ArrayList<AphiaRecord>(Arrays.asList(childrenArray));
-				AphiaRecord[] nextBit = null;
-				int more = 50;
-				while (more==50) { 
-					nextBit = wormsService.getAphiaChildrenByID(taxonid, count+1, marineOnly);
-					if (nextBit!=null) { 
-						more = nextBit.length;
-						count = count+more;
-						children.addAll(new ArrayList<AphiaRecord>(Arrays.asList(nextBit)));
-					} else { 
-						more = 0;
+		AphiaRecord[] childrenArray = null;
+		try { 
+			List<AphiaRecord> children = wormsService.aphiaChildrenByAphiaID(taxonid, marineOnly, 0);
+			if (children!=null) { 
+				int count = children.size();
+				if (count==50) {
+					// there might be more records
+					List<AphiaRecord> nextBit = null;
+					int more = 50;
+					while (more==50) { 
+						nextBit = wormsService.aphiaChildrenByAphiaID(taxonid, marineOnly, count+1);
+						if (nextBit!=null) { 
+							more = nextBit.size();
+							count = count+more;
+							children.addAll(nextBit);
+						} else { 
+							more = 0;
+						}
+					} 
+					try { 
+						childrenArray = (AphiaRecord[]) children.toArray();
+					} catch (ClassCastException e) { 
+						log.error(e.getMessage(),e);
 					}
-				} 
-				try { 
-				    childrenArray = (AphiaRecord[]) children.toArray();
-				} catch (ClassCastException e) { 
-					log.error(e.getMessage(),e);
 				}
 			}
+		} catch (ApiException e) { 
+			throw new RemoteException(e.getMessage());
 		}
 		return childrenArray;
 	}
 	
 	protected void getAllChildren(int taxonid, boolean marineOnly) { 
 		try {
-			AphiaRecord record = wormsService.getAphiaRecordByID(taxonid);
+			AphiaRecord record = wormsService.aphiaRecordByAphiaID(taxonid);
 			AphiaRecord[] childrenArray = populateChildrenArray(taxonid, marineOnly);
 			if (childrenArray!=null) { 
 				ArrayList<AphiaRecord> children = new ArrayList<AphiaRecord>(Arrays.asList(childrenArray));
@@ -178,7 +186,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 
 						output.add(child.getKingdom());
 						output.add(child.getPhylum());
-						output.add(child.get_class());
+						output.add(child.getPropertyClass());
 						output.add(child.getOrder());
 						output.add(child.getFamily());
 						output.add(child.getGenus());
@@ -239,7 +247,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 					}
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (ApiException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -257,14 +265,13 @@ public class WoRMSDataSource implements Harvester, Validator {
 			String taxonName = taxonNameToValidate.getScientificName();
 			String authorship = taxonNameToValidate.getAuthorship();
 			taxonNameToValidate.setAuthorComparator(authorNameComparator);
-			AphiaRecord[] resultsArr = wormsService.getAphiaRecords(taxonName, false, false, false, 1);
-			if (resultsArr!=null && resultsArr.length>0) { 
+			List<AphiaRecord> results = wormsService.aphiaRecordsByName(taxonName, false, false, 1);
+			if (results!=null && results.size()>0) { 
 				// We got at least one result
-				List<AphiaRecord> results = Arrays.asList(resultsArr);
 				Iterator<AphiaRecord> i = results.iterator();
 				//Multiple matches indicate homonyms (or in WoRMS, deleted records).
 				if (results.size()>1) {
-				    log.debug("More than one match: " + resultsArr.length);
+				    log.debug("More than one match: " + results.size());
 					boolean exactMatch = false;
 					List<AphiaRecord> matches = new ArrayList<AphiaRecord>();
 					while (i.hasNext() && !exactMatch) { 
@@ -359,14 +366,14 @@ public class WoRMSDataSource implements Harvester, Validator {
 				log.debug("No match.");
 				// Try WoRMS fuzzy matching query
 				String[] searchNames = { taxonName + " " + authorship };
-				AphiaRecord[][] matchResultsArr = wormsService.matchAphiaRecordsByNames(searchNames, false);
-				if (matchResultsArr!=null && matchResultsArr.length>0) {
-					Iterator<AphiaRecord[]> i0 = (Arrays.asList(matchResultsArr)).iterator();
+				List<String> searchNamesList = Arrays.asList(searchNames);
+				List<AphiaRecordsArray> matchResultsArr = wormsService.aphiaRecordsByMatchNames(searchNamesList, false);
+				if (matchResultsArr!=null && matchResultsArr.size()>0) {
+					Iterator<AphiaRecordsArray> i0 = matchResultsArr.iterator();
 					while (i0.hasNext()) {
 						// iterate through the inputs, there should be one and only one
-						AphiaRecord[] matchResArr = i0.next();
-						List<AphiaRecord> matches = Arrays.asList(matchResArr);
-						Iterator<AphiaRecord> im = matches.iterator();
+						AphiaRecordsArray matchResArr = i0.next();
+						Iterator<AphiaRecord> im = matchResArr.iterator();
 						List<NameUsage> potentialMatches = new ArrayList<NameUsage>();
 						while (im.hasNext()) { 
 							// iterate through the results, no match will have one result that is null
@@ -397,7 +404,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 			    	log.error("Fuzzy match query returned null instead of a result set.");
 			    }
 			}
-		} catch (RemoteException e) {
+		} catch (ApiException e) {
 			if (e.getMessage().equals("Connection timed out")) { 
 				log.error(e.getMessage() + " " + taxonNameToValidate.getScientificName() + " " + taxonNameToValidate.getInputDbPK());
 			} else if (e.getCause()!=null && e.getCause().getClass().equals(UnknownHostException.class)) { 
@@ -419,15 +426,13 @@ public class WoRMSDataSource implements Harvester, Validator {
 		String authorship = toCheck.getAuthorship();
 		toCheck.setAuthorComparator(authorNameComparator);
 		try {
-			AphiaRecord[] resultsArr = wormsService.getAphiaRecords(taxonName, false, false, false, 1);
-			List<AphiaRecord> results = Arrays.asList(resultsArr);
-			log.debug(resultsArr.length);
+			List<AphiaRecord> results = wormsService.aphiaRecordsByName(taxonName, false, false, 1);
+			log.debug(results.size());
 			Iterator<AphiaRecord> i = results.iterator();
 			while(i.hasNext()) { 
 				AphiaRecord record = i.next();
 				int id = record.getAphiaID();
-				Source[] sourceArr = wormsService.getSourcesByAphiaID(id);
-				List<Source> sources = Arrays.asList(sourceArr);
+				List<Source> sources = wormsSourceService.aphiaSourcesByAphiaID(id);
 				Iterator<Source> is = sources.iterator();
 				while (is.hasNext()) { 
 					Source source = is.next();
@@ -441,7 +446,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 					}
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (ApiException e) {
 			log.error(e.getMessage(),e);
 		}		
 		
@@ -449,10 +454,9 @@ public class WoRMSDataSource implements Harvester, Validator {
 
 	public Map<String,String> getOriginalCitation(int aphiaId) { 
 		HashMap<String,String> result = new HashMap<String,String>();
-		Source[] sourceArr;
+		List<Source> sources;
 		try {
-			sourceArr = wormsService.getSourcesByAphiaID(aphiaId);
-			List<Source> sources = Arrays.asList(sourceArr);
+			sources = wormsSourceService.aphiaSourcesByAphiaID(aphiaId);
 			Iterator<Source> is = sources.iterator();
 			while (is.hasNext()) { 
 				Source source = is.next();
@@ -462,7 +466,7 @@ public class WoRMSDataSource implements Harvester, Validator {
 					result.put("link", source.getLink());
 				}
 			}
-		} catch (RemoteException e) {
+		} catch (ApiException e) {
 			e.printStackTrace();
 		}
 		return result;

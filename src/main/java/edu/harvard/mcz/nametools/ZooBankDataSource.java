@@ -34,7 +34,6 @@ import org.filteredpush.services.ZooBankNomenclaturalAct;
 import org.gbif.api.model.checklistbank.ParsedName;
 import org.gbif.nameparser.NameParser;
 import org.gbif.nameparser.UnparsableException;
-import org.marinespecies.aphia.v1_0.AphiaNameServicePortTypeProxy;
 
 /**
  * @author mole

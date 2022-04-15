@@ -3,11 +3,11 @@ package org.filteredpush.services;
 import org.filteredpush.util.CurationComment;
 import org.filteredpush.util.CurationStatus;
 import org.filteredpush.util.CurationException;
-import org.marinespecies.aphia.v1_0.AphiaNameServicePortTypeProxy;
-import org.marinespecies.aphia.v1_0.AphiaRecord;
+import org.marinespecies.aphia.v1_0.api.TaxonomicDataApi;
+import org.marinespecies.aphia.v1_0.handler.ApiException;
+import org.marinespecies.aphia.v1_0.model.AphiaRecord;
 
 import java.io.*;
-import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -296,19 +296,19 @@ public class WoRMSService implements IScientificNameValidationService{
 	private String simpleNameSearch(String taxon, String author) throws CurationException{
 		String id  = null;
 
-		AphiaNameServicePortTypeProxy wormsService = new AphiaNameServicePortTypeProxy();
+		TaxonomicDataApi wormsService = new TaxonomicDataApi();
 
 		boolean marineOnly = false;
 		try {
-			int taxonid = wormsService.getAphiaID(taxon, marineOnly);
+			int taxonid = wormsService.aphiaIDByName(taxon, marineOnly);
 
 			String foundId = Integer.toString(taxonid);
-			AphiaRecord record = wormsService.getAphiaRecordByID(taxonid); 
+			AphiaRecord record = wormsService.aphiaRecordByAphiaID(taxonid); 
 			String foundTaxon = record.getScientificname();
 			String foundAuthor = record.getAuthority();
 			foundKingdom = record.getKingdom();
 			foundPhylum = record.getPhylum();
-			foundClass = record.get_class();
+			foundClass = record.getPropertyClass();
 			foundOrder = record.getOrder();
 			foundFamily = record.getFamily();
 			if(foundTaxon.toLowerCase().equals(taxon.toLowerCase()) && author.toLowerCase().equals(foundAuthor.toLowerCase())){
@@ -318,7 +318,7 @@ public class WoRMSService implements IScientificNameValidationService{
 		} catch (NullPointerException ex) {
 			// no match found
 			id = null;
-		} catch (RemoteException e) {
+		} catch (ApiException e) {
 			throw new CurationException("WoRMSService failed to access WoRMS Aphia service for " + taxon + ". " +e.getMessage());
 		} 
 

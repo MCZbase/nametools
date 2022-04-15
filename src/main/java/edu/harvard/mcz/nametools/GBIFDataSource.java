@@ -42,7 +42,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.marinespecies.aphia.v1_0.AphiaRecord;
+import org.marinespecies.aphia.v1_0.model.AphiaRecord;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.io.ICsvListWriter;
 import org.supercsv.prefs.CsvPreference;
