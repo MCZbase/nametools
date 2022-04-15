@@ -48,13 +48,13 @@ import org.supercsv.prefs.CsvPreference;
  * 
  * @author mole
  *
- * $Id: CheckNames.java 466 2015-03-27 17:09:11Z mole $
+ * $Id: CheckNames.java 471 2015-03-28 01:40:18Z mole $
  */
 public class CheckNames {
 	
 	private static final Log log = LogFactory.getLog(CheckNames.class);
 	
-	public static final String VERSION = "0.1.2";
+	public static final String VERSION = "0.1.3";
 	
 	public static final String ACTION_HARVEST = "harvest";
 	public static final String ACTION_VALIDATE = "validate";
@@ -182,7 +182,7 @@ public class CheckNames {
         				NameUsage toValidate = validationIterator.next();
         				NameUsage result = ipni.validate(toValidate);
         				if (result!=null) {
-        					if (result.getScientificName().equals(toValidate)) {
+        					if (result.getScientificName().equals(toValidate.getScientificName())) {
         						System.out.println(result.toBriefCsvLine());
         						log.debug(result.getGuid());
         					} else { 

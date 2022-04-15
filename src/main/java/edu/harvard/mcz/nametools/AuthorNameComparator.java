@@ -5,6 +5,15 @@ import org.apache.commons.lang3.StringUtils;
 public abstract class AuthorNameComparator {
 
 	/**
+	 *  Threshold of similarity (0-1) over which strong similarity is asserted.
+	 */
+	protected double similarityThreshold = .75d;
+	/**
+	 *  Threshold of similarity (0-1) over which a weak similarity is asserted.
+	 */
+    protected double weakThreshold = .5d;
+	
+	/**
 	 * Compare two authorship strings, and assert a comparison between the
 	 * two in the form of a NameComparison.
 	 * 
@@ -132,6 +141,38 @@ public abstract class AuthorNameComparator {
 			result =  (longer.length() - StringUtils.getLevenshteinDistance(longer, shorter)) / (double) longer.length();
 		}
 		return result;
+	}
+
+	/**
+	 * Get the threshold of similarity (0-1) over which strong similarity is asserted.
+	 *  
+	 * @return the similarityThreshold
+	 */
+	public double getSimilarityThreshold() {
+		return similarityThreshold;
+	}
+
+	/**
+	 * @param similarityThreshold the similarityThreshold to set
+	 */
+	public void setSimilarityThreshold(double similarityThreshold) {
+		this.similarityThreshold = similarityThreshold;
+	}
+
+	/**
+	 * Get the threshold of similarity (0-1) over which weak similarity is asserted.
+	 * 
+	 * @return the weakThreshold
+	 */
+	public double getWeakThreshold() {
+		return weakThreshold;
+	}
+
+	/**
+	 * @param weakThreshold the weakThreshold to set
+	 */
+	public void setWeakThreshold(double weakThreshold) {
+		this.weakThreshold = weakThreshold;
 	}
 	
 }

@@ -13,6 +13,10 @@ import org.filteredpush.util.CurationComment;
 import org.filteredpush.util.CurationStatus;
 import org.filteredpush.util.CurationException;
 
+import edu.harvard.mcz.nametools.ICNafpAuthorNameComparator;
+import edu.harvard.mcz.nametools.NameComparison;
+import edu.harvard.mcz.nametools.NameUsage;
+
 import java.io.*;
 import java.util.*;
 
@@ -95,7 +99,65 @@ public class IPNIService implements IScientificNameValidationService {
 			//try to find it in IPNI service			
 			try{
 				String source = "";
-				String id = simplePlantNameSearch(scientificName, author);
+				logger.debug("About to call plantNameSearch(" + scientificName + "," + author + ")");
+				List<NameUsage> searchResults = plantNameSearch(scientificName, author);
+				String id = null;
+				if (searchResults.size()==1) { 
+					source = "IPNI";
+					NameUsage match = searchResults.get(0);
+					int iid = match.getKey();
+					id = Integer.toString(iid);
+					//got one  match by searching in IPNI
+					IPNIlsid = match.getGuid(); 
+					correctedScientificName = match.getScientificName();
+					correctedAuthor = match.getAuthorship();
+					if (match.getMatchDescription().equals(NameComparison.MATCH_EXACT) || match.getAuthorshipStringEditDistance()==1d) { 
+					   comment = "The scientific name and authorship are correct.  " + match.getMatchDescription();
+					   curationStatus = CurationComment.CORRECT;
+					} else if (match.getMatchDescription().equals(NameComparison.MATCH_ERROR) || match.getMatchDescription().equals(NameComparison.MATCH_DISSIMILAR)) {
+						// no match to report
+						id = null;
+					} else { 
+				        if (match.getAuthorshipStringEditDistance()>= match.getAuthorComparator().getSimilarityThreshold()) {
+						   comment = "Scientific name authorship corrected.  " + match.getMatchDescription() + "  Similarity=" + match.getAuthorshipStringEditDistance();
+						   curationStatus = CurationComment.CURATED;
+				        } else { 
+						   // too weak a match to report
+						   id = null;
+				        }
+					}
+				} else if (searchResults.size()>1) {  
+				    Iterator<NameUsage> i = searchResults.iterator();
+				    boolean done = false;
+				    double bestMatch = -1d;
+				    while (i.hasNext() && !done) { 
+				    	NameUsage match = i.next();
+				    	// pick the best match out of the search results.
+				    	if (match.getAuthorshipStringEditDistance()>bestMatch) { 
+				    		bestMatch = match.getAuthorshipStringEditDistance();
+				    	} else { 
+				    		if (match.getAuthorshipStringEditDistance()>= match.getAuthorComparator().getSimilarityThreshold()) {
+				    			source = "IPNI";
+				    			int iid = match.getKey();
+				    			id = Integer.toString(iid);
+				    			IPNIlsid = match.getGuid(); 
+				    			correctedScientificName = match.getScientificName();
+				    			correctedAuthor = match.getAuthorship();
+				    			comment = "The scientific name and authorship are correct.";
+				    			if (match.getMatchDescription().equals(NameComparison.MATCH_EXACT) || match.getAuthorshipStringEditDistance()==1d) { 
+				    				comment = "The scientific name and authorship are correct.  " + match.getMatchDescription();
+				    				curationStatus = CurationComment.CORRECT;
+				    			} else { 
+				    				comment = "Scientific name authorship corrected.  " + match.getMatchDescription() + "  Similarity=" + match.getAuthorshipStringEditDistance();
+				    				curationStatus = CurationComment.CURATED;
+				    			}
+				    			if (match.getMatchDescription().equals(NameComparison.MATCH_EXACT)) {
+				    				done = true;
+				    			}
+				    		}
+				    	}
+				    }
+				}
 				if(id == null){ 
 					//access the GNI and try to get the name that is in the lexical group and from IPNI
 					Vector<String> resolvedNameInfo = resolveIPNINameInLexicalGroupFromGNI(scientificName);
@@ -123,14 +185,6 @@ public class IPNIService implements IScientificNameValidationService {
 							source = "IPNI/GNI";
 						}
 					}					
-				}else{
-					//get a match by searching in IPNI
-					IPNIlsid = constructIPNILSID(id); 
-					correctedScientificName = scientificName;
-					correctedAuthor = author;
-					comment = "The scientific name and authorship are correct.";
-					curationStatus = CurationComment.CORRECT;
-					source = "IPNI";				
 				}				
 				
 				//write newly found information into hashmap and later write into the cached file if it exists
@@ -312,6 +366,115 @@ public class IPNIService implements IScientificNameValidationService {
 		return ipniLSIDPrefix+id;
 	}
 		
+	
+	/**
+	 * Query IPNI's simple plant name search with a scientificName, obtain a list of zero to 
+	 * many matches where the authorship is an exact match (ignoring spaces), or is a matching
+	 * abbreviation of the provided authorship.
+	 * 
+	 * @param taxon the scientific name to check
+	 * @param author the author to find amongst the results
+	 * @return a list of NameUsage instances on for each case of a matching name and authorship
+	 * @throws CurationException
+	 */
+	public List<NameUsage> plantNameSearch(String taxon, String author) throws CurationException { 
+		List<NameUsage> result = new ArrayList<NameUsage>();
+		
+		String outputFormat = "delimited-minimal";
+        long starttime = System.currentTimeMillis();
+		
+        HttpClient httpclient = new DefaultHttpClient();
+        httpclient.getParams().setIntParameter(CoreConnectionPNames.SO_TIMEOUT,5000);
+        httpclient.getParams().setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT,30000);
+
+        List<org.apache.http.NameValuePair> parameters = new ArrayList<org.apache.http.NameValuePair>();
+        parameters.add(new BasicNameValuePair("find_wholeName", taxon));
+        parameters.add(new BasicNameValuePair("output_format", outputFormat));
+		
+		try {
+            HttpResponse resp;
+            HttpPost httpPost = new HttpPost(IPNIurl);
+            httpPost.setEntity(new UrlEncodedFormEntity(parameters));
+            resp = httpclient.execute(httpPost);
+            logger.debug(resp.getStatusLine());
+            if (resp.getStatusLine().getStatusCode() != 200) {
+				throw new CurationException("IPNIService failed to send request to IPNI for "+resp.getStatusLine().getStatusCode());
+			}				
+            InputStream response = resp.getEntity().getContent();
+			
+			//parse the response
+			String id  = null;
+			String version = "";
+			BufferedReader responseReader = new BufferedReader(new InputStreamReader(response));
+			//skip the head
+			String strLine = responseReader.readLine();
+            logger.debug(strLine);			
+			while( (strLine = responseReader.readLine())!=null ){
+	            logger.debug(strLine);			
+				String [] info = strLine.split("%");
+				if(info.length!=5){
+					throw new CurationException("IPNIService failed in simplePlantNameSearch for " + taxon + "since the returned value doesn't contain valid information.");
+				}
+				String foundId = info[0].trim();
+				String foundVersion = info[1].trim();
+				String foundTaxon = info[3].trim();
+				String foundAuthor = info[4].trim();
+	            logger.debug(foundTaxon);				
+	            logger.debug(foundAuthor);				
+				NameUsage usage = new NameUsage();
+				usage.setKey(Integer.parseInt(foundId.replaceAll("[^0-9]", "")));
+				usage.setScientificName(foundTaxon);
+                usage.setAuthorship(foundAuthor);
+                usage.setGuid(constructIPNILSID(foundId));
+                usage.setAuthorComparator(new ICNafpAuthorNameComparator(.70d,.5d));
+                usage.setOriginalAuthorship(author);
+                usage.setOriginalScientificName(taxon);
+                NameComparison comparison = usage.getAuthorComparator().compare(author, foundAuthor);
+                logger.debug(comparison.getSimilarity());
+                usage.setAuthorshipStringEditDistance(comparison.getSimilarity());
+                usage.setMatchDescription(comparison.getMatchType());
+				logger.debug(usage.getMatchDescription());
+				logger.debug(usage.getAuthorshipStringEditDistance());
+				if(     foundTaxon.toLowerCase().equals(taxon.toLowerCase().trim()) 
+						&&
+						(
+						  comparison.getMatchType().equals(NameComparison.MATCH_EXACT)
+						  ||
+						  comparison.getSimilarity()==1d
+						  ||
+						  comparison.getMatchType().equals(NameComparison.MATCH_SAMEBUTABBREVIATED)
+			            )
+					)
+				{
+					//found one
+		            logger.debug("Matched");	
+		            result.add(usage);
+					if(version.equals("") || version.compareTo(foundVersion)<=0){
+						//the newly found one is more recent
+						version = foundVersion;
+						id = foundId;
+			            logger.debug(id);						
+					}
+				}
+				
+				strLine = responseReader.readLine();
+			}
+			responseReader.close();
+            httpPost.releaseConnection();
+            List l = new LinkedList();
+            l.add(this.getClass().getSimpleName());
+            l.add(starttime);
+            l.add(System.currentTimeMillis());
+            l.add(httpPost.toString());
+            log.add(l);
+            logger.debug(id);						
+		} catch (IOException e) {
+			throw new CurationException("IPNIService failed to access IPNI service for "+e.getMessage());
+		}			
+		
+		return result;
+	}
+	
 	public String simplePlantNameSearch(String taxon, String author) throws CurationException {
 		String outputFormat = "delimited-minimal";
         long starttime = System.currentTimeMillis();

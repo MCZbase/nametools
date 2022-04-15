@@ -15,7 +15,7 @@ public class TestICNafpAuthorNameComparator {
 	
 	@Before
 	public void setUp() throws Exception {
-		comparator = new ICNafpAuthorNameComparator(.75d,.5d);
+		comparator = new ICNafpAuthorNameComparator();
 	}
 
 	@Test

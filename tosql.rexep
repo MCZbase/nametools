@@ -1,0 +1,1 @@
+%s/^"\([0-9]*\)",".*",".*","\(urn:lsid:ipni.org:names:[-0-9]*\)","Exact.*$/update taxon set guid = '\2' where taxonid = \1;/

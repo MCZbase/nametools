@@ -40,13 +40,12 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 	private static final Log log = LogFactory.getLog(ICNafpAuthorNameComparator.class);
 	
 	/**
-	 *  Threshold of similarity (0-1) over which strong similarity is asserted.
+	 * Constructor, specified default values for similarity assertions.
 	 */
-	protected double similarityThreshold = .75d;
-	/**
-	 *  Threshold of similarity (0-1) over which a weak similarity is asserted.
-	 */
-    protected double weakThreshold = .5d;
+	public ICNafpAuthorNameComparator() { 
+    	this.similarityThreshold = .70d;
+    	this.weakThreshold = .5d;
+	}
 	
     /**
      * Constructor for an ICNapf author name comparator that specifies values for similarity
@@ -76,14 +75,15 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					|| anAuthor.toLowerCase().replaceAll("[ .,]", "").equals(toOtherAuthor.toLowerCase().replaceAll("[ .,]", ""))) 
 			{ 
 				result.setMatchType(NameComparison.MATCH_EXACT);
+				result.setSimilarity(1.0d);
 			} else {
+				double similarity = AuthorNameComparator.calulateSimilarityOfAuthor(anAuthor, toOtherAuthor);
+				result.setSimilarity(similarity);
 				if (anAuthor.length()==0 && toOtherAuthor.length()> 0 ) { 
 					result.setMatchType(NameComparison.MATCH_ADDSAUTHOR);
 				} else { 
 					NameUsage test = new NameUsage();
 					test.setAuthorship(anAuthor);
-					double similarity = AuthorNameComparator.calulateSimilarityOfAuthor(anAuthor, toOtherAuthor);
-					result.setSimilarity(similarity);
 					if (similarity > similarityThreshold) { 
 						result.setMatchType(NameComparison.MATCH_AUTHSIMILAR);
 					} else if (similarity > weakThreshold) { 

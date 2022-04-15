@@ -45,7 +45,7 @@ public class IPNIDataSource implements Validator {
 		service = new IPNIService();
 		// service.setUseCache(false);
 		log.debug(service.simplePlantNameSearch("Quercus alba", "L."));
-		authorNameComparator = new ICNafpAuthorNameComparator(.75d,.5d);
+		authorNameComparator = new ICNafpAuthorNameComparator(.70d,.5d);
 	}
 	
 	/* (non-Javadoc)
@@ -64,6 +64,7 @@ public class IPNIDataSource implements Validator {
 				log.debug(id);
 				log.debug(taxonName);
 				log.debug(authorship);
+				
 				service.validateScientificName(taxonName, authorship);
 				if (service.getCurationStatus().equals(CurationComment.UNABLE_DETERMINE_VALIDITY) || service.getCurationStatus().equals(CurationComment.UNABLE_CURATED)) { 
 					// not found or a handled error

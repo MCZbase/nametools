@@ -523,7 +523,7 @@ public class GBIFDataSource implements Harvester, Validator {
 			    Iterator<NameUsage> i = hits.iterator();
 				// One possible match
 				NameUsage potentialMatch = i.next();
-				AuthorNameComparator authorNameComparator = new ICNafpAuthorNameComparator(.75d,.5d);
+				AuthorNameComparator authorNameComparator = new ICNafpAuthorNameComparator(.70d,.5d);
 				if (potentialMatch.getKingdom().equals("Animalia")) { 
 				    authorNameComparator = new ICZNAuthorNameComparator(.75d,.5d);
 				}

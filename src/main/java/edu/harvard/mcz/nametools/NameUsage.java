@@ -53,7 +53,7 @@ import org.supercsv.util.CsvContext;
  * 
  * @author mole
  *
- * $Id: NameUsage.java 458 2015-03-26 13:41:02Z mole $ 
+ * $Id: NameUsage.java 469 2015-03-27 20:32:26Z mole $ 
  */
 public class NameUsage implements LinneanClassification {
 	
@@ -488,12 +488,12 @@ public class NameUsage implements LinneanClassification {
 		try {
 			ParsedName parse  = parser.parse(this.scientificName);
 			if (this.species==null) {
-				if (!parse.getRank().higherThan(Rank.SPECIES)) { 
+				if (parse.getRank()!=null && !parse.getRank().higherThan(Rank.SPECIES)) { 
 				   setSpecies(parse.getGenusOrAbove() + " " + parse.getSpecificEpithet());
 				}
 			} 
 			if (this.genus==null) { 
-				if (!parse.getRank().higherThan(Rank.GENUS)) { 
+				if (parse.getRank()!=null && !parse.getRank().higherThan(Rank.GENUS)) { 
 					this.setGenus(parse.getGenusOrAbove());
 				}
 			}

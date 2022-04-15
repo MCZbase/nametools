@@ -55,7 +55,7 @@ public class IFDataSource implements Validator, Harvester {
 		URL test = new URL(ifService.getEndpoint());
 		URLConnection conn = test.openConnection();
 		conn.connect();
-		authorNameComparator = new ICNafpAuthorNameComparator(.75d,.5d);
+		authorNameComparator = new ICNafpAuthorNameComparator(.70d,.5d);
 	}
 	
 	/* (non-Javadoc)

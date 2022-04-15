@@ -27,13 +27,12 @@ package edu.harvard.mcz.nametools;
 public class ICZNAuthorNameComparator extends AuthorNameComparator {
 	
 	/**
-	 *  Threshold of similarity (0-1) over which strong similarity is asserted.
+	 * Constructor, specified default values for similarity assertions.
 	 */
-	protected double similarityThreshold = .75d;
-	/**
-	 *  Threshold of similarity (0-1) over which a weak similarity is asserted.
-	 */
-    protected double weakThreshold = .5d;
+	public ICZNAuthorNameComparator() { 
+    	this.similarityThreshold = .75d;
+    	this.weakThreshold = .5d;
+	}
 	
     /**
      * Constructor for an ICZN author name comparator that specifies values for similarity
