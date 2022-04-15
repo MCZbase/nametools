@@ -99,9 +99,13 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					List<String> toOtherAuthorBits = tokenizeAuthorship(toOtherAuthor);
 					if (anAuthorBits.size() != toOtherAuthorBits.size()) { 
 						result.setMatchType(NameComparison.MATCH_PARTSDIFFER);
+						log.debug(anAuthorBits.size() + " " + toOtherAuthorBits.size());
 					} else { 
+						log.debug(anAuthorBits.size() + " " + toOtherAuthorBits.size());
 						if (ICNafpAuthorNameComparator.matchedOnWordsInTokens(anAuthor, toOtherAuthor)) { 
 							result.setMatchType(NameComparison.MATCH_SAMEBUTABBREVIATED);
+						} else { 
+						    log.debug("matchedOnWordsInTokens("+anAuthor+","+toOtherAuthor+") = false");
 						}
 					}
 					
@@ -121,6 +125,7 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 				}
 			}
 		}
+		log.debug(result.getMatchType());
 		return result;
 	}	
 	
@@ -137,6 +142,7 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 	 * otherwise return false. 
 	 */
 	public static boolean matchedOnWordsInTokens(String anAuthor, String toOtherAuthor) {
+		log.debug("in matchedOnWordsInTokens(" + anAuthor + "," + toOtherAuthor + ")");
 		// TODO: Break this into several methods, called from this method, each 
 		// method with its own unit tests, this assembly is large enough to be difficult to 
 		// debug when tests fail.
@@ -150,40 +156,30 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 			while (iA.hasNext()) { 
 				String anAuthorBit = iA.next();
 				String toOtherAuthorBit = iO.next();
-			    String shorter = anAuthorBit;
-			    String longer = toOtherAuthorBit;
-	    		if (anAuthorBit.length() > toOtherAuthorBit.length()) { 
-    				shorter = toOtherAuthorBit;
-				    longer = anAuthorBit;
-			    }
-	    		if (shorter.length()<longer.length()) { 
-	    			if (!shorter.endsWith(".") && !longer.contains(".")) {
-	    				// if the shorter of the two bits doesn't end with a period 
-	    				// and the longer of the two bits doesn't contain a period 
-	    			    // then assume that the shorter isn't an abbreviation and 
-	    				// declare a missmatch.
-	    				foundMissmatch = true;
-	    			}
+	    		if (shorterButNotAbbreviation(anAuthorBit, toOtherAuthorBit)) { 
+	    			// declare a missmatch.
+	    			foundMissmatch = true;
+	    			log.debug("Missmatch shorter but not abbreviation: " + anAuthorBit + ":" + toOtherAuthorBit);
 	    		}
 				if (!anAuthorBit.equals(toOtherAuthorBit)) {
 					// Check if initials are the same
-					String initA = extractInitials(anAuthorBit);
-					String initO = extractInitials(toOtherAuthorBit);
-					if (!initA.equals(initO)) { 
-						if (initA.length()==initO.length() && initA.length()>0) { 
-							foundMissmatch = true;
-						}
+					if (initalsAreDifferent(anAuthorBit, toOtherAuthorBit)) { 
+						foundMissmatch = true;
+	    				 log.debug("Missmatch: " + anAuthorBit + ":" + toOtherAuthorBit);
 					}
+
 					// remove punctuation.
 		 			anAuthorBit = anAuthorBit.replaceAll("[^A-Za-z ::alpha::]", " ");
 					toOtherAuthorBit = toOtherAuthorBit.replaceAll("[^A-Za-z ::alpha::]", " ");
 					if (anAuthorBit.trim().equals("L") && toOtherAuthorBit.equals("Lamarck")) { 
 						// Special case, botany, fail
 						foundMissmatch = true;
+	    				log.debug("Missmatch: " + anAuthorBit + ": " + toOtherAuthorBit);
 					}
 					if (anAuthorBit.trim().equals("Lamarck") && toOtherAuthorBit.equals("L")) { 
 						// Special case, botany, fail
 						foundMissmatch = true;
+	    				log.debug("Missmatch: " + anAuthorBit + ": " + toOtherAuthorBit);
 					}
 					// remove single letters
 					anAuthorBit = anAuthorBit.replaceAll("^[A-Z] ", " ");
@@ -199,22 +195,92 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					toOtherAuthorBit = toOtherAuthorBit.replaceAll("  ", " ").trim();
 					List<String> anAuthorSubBits = Arrays.asList(anAuthorBit.trim().split(" "));
 					List<String> toOtherAuthorSubBits = Arrays.asList(toOtherAuthorBit.trim().split(" "));
-					if (anAuthorSubBits.size()!=toOtherAuthorSubBits.size()) { 
-	    				foundMissmatch = true;
-					} else { 
-						Iterator<String> iAsb = anAuthorSubBits.iterator();
-						Iterator<String> iOsb = toOtherAuthorSubBits.iterator();
-						while (iAsb.hasNext()) { 
-							String subBit = iAsb.next();
-							String otherSubBit = iOsb.next();
-							if (!compareSameOrStartsWith(subBit,otherSubBit)) { 
-								foundMissmatch = true;
+					if (!knownMatch(anAuthorBit, toOtherAuthorBit)) { 
+						if (anAuthorSubBits.size()!=toOtherAuthorSubBits.size()) {
+							foundMissmatch = true;
+							log.debug("Missmatch: " + anAuthorBit.trim() + " " + anAuthorSubBits.size() + ": " + toOtherAuthorBit.trim() + " " + toOtherAuthorSubBits.size());
+						} else { 
+							Iterator<String> iAsb = anAuthorSubBits.iterator();
+							Iterator<String> iOsb = toOtherAuthorSubBits.iterator();
+							while (iAsb.hasNext()) { 
+								String subBit = iAsb.next();
+								String otherSubBit = iOsb.next();
+								if (!compareSameOrStartsWith(subBit,otherSubBit)) { 
+									foundMissmatch = true;
+									log.debug("Missmatch: " + subBit + ": " + otherSubBit);
+								}
 							}
 						}
 					}
 				}
 			}
 			result = !foundMissmatch;
+		}
+		log.debug("matchedOnWordsInTokens(): " + result);
+		return result;
+	}
+	
+	public static boolean knownMatch(String anAuthor, String anotherAuthor) {
+		boolean result = false;
+		if (  (anAuthor.equals("DC") && anotherAuthor.equals("de Candolle")) ||
+			  (anotherAuthor.equals("DC") && anAuthor.equals("de Candolle"))
+		   ) { 
+			result = true;
+		}
+		return result;
+	}
+	
+	/**
+	 * If initials are present in both strings, true false if they are different, otherwise
+	 * return true.
+	 * 
+	 * @param anAuthorBit
+	 * @param toOtherAuthorBit
+	 * @return false if initials are present in both author bits, otherwise return true
+	 */
+	public static boolean initalsAreDifferent(String anAuthorBit, String toOtherAuthorBit) {
+		boolean result = false;
+		String initA = extractInitials(anAuthorBit);
+		String initO = extractInitials(toOtherAuthorBit);
+		if (!initA.equals(initO)) { 
+			if (initA.length()==initO.length() && initA.length()>0) { 
+				result = true;
+			    log.debug("Different Initials: " + initA + ":" + initO);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Given two strings, does the shorter appear to not be an abbreviation.
+	 * 
+	 * @param shorter a string (doesn't have to be the shorter of the two).
+	 * @param longer string to compare with (doesn't have to be the longer of the two).
+	 * 
+	 * @return true if one string is shorter than the other and doesn't end with a period, 
+	 *  and the longer of the two doesn't contain a period, thus the shorter doesn't 
+	 *  appear to be an abbreviation of the longer.  Otherwise returns false (including
+	 *  if both strings are the same length).
+	 */
+	public static boolean shorterButNotAbbreviation(String shorter, String longer) {
+		boolean result = false;
+		String s = shorter; 
+		String l = longer;
+		if (s.length() > l.length()) { 
+			shorter = l;
+		    longer = s;
+	    }
+		if (shorter.length()<longer.length()) { 
+			if (!shorter.endsWith(".") && !longer.contains(".")) {
+				// if the shorter of the two bits doesn't end with a period 
+				// and the longer of the two bits doesn't contain a period 
+			    // then assume that the shorter isn't an abbreviation. 
+				result = true;
+				log.debug("Missmatch: " + shorter + ":" + longer);
+			}
+		}
+		if (shorter.length()==longer.length()) { 
+			//result = false;
 		}
 		return result;
 	}
@@ -237,7 +303,7 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 	
 	/**
 	 * Compare to strings to see if they are the same or if the longer starts with
-	 * the shorter.  Special case, "L." is not same or starts with "Lamarck".
+	 * the shorter.  Special case, "L." is not same or starts with "Lamarck".  
 	 * 
 	 * @param aString
 	 * @param anotherString
@@ -255,16 +321,21 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 				shorter = anotherString;
 				longer = aString;
 			}
-			if (longer.startsWith(shorter)) { 
+			if (longer.replace(".", "").startsWith(shorter.replace(".", ""))) { 
+				result = true;
+			}
+			// Abbreviation DC for de Candolle
+			if (shorter.replace(".", "").equals("DC") && longer.equals("de Candolle")) { 
 				result = true;
 			}
 		    // Special case, for botany, L doesn't abbreviate Lamarck, only Linnaeus:
-		    if (shorter.equals("L") && longer.equals("Lamarck")) { 
+		    if (shorter.replace(".", "").equals("L") && longer.equals("Lamarck")) { 
 		    	result = false;
 		    }
 		}
 		return result;
 	}
+	
 	
 	/**
 	 * Given a botanical authorship string, split it into a list of component 
@@ -326,6 +397,10 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 			}
 
 		}		
+		// string any leading/trailing spaces
+		for (int j=0; j<result.size(); j++) { 
+			result.set(j, result.get(j).trim());
+		}
 		
 		return result;
 	}

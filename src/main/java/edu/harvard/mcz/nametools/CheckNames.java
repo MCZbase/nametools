@@ -48,13 +48,13 @@ import org.supercsv.prefs.CsvPreference;
  * 
  * @author mole
  *
- * $Id: CheckNames.java 471 2015-03-28 01:40:18Z mole $
+ * $Id: CheckNames.java 472 2015-03-28 01:42:57Z mole $
  */
 public class CheckNames {
 	
 	private static final Log log = LogFactory.getLog(CheckNames.class);
 	
-	public static final String VERSION = "0.1.3";
+	public static final String VERSION = "0.1.4-SNAPSHOT";
 	
 	public static final String ACTION_HARVEST = "harvest";
 	public static final String ACTION_VALIDATE = "validate";
