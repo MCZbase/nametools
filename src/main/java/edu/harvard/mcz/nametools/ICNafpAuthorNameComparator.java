@@ -137,10 +137,12 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 	 * otherwise return false. 
 	 */
 	public static boolean matchedOnWordsInTokens(String anAuthor, String toOtherAuthor) {
+		// TODO: Break this into several methods, called from this method, each 
+		// method with its own unit tests, this assembly is large enough to be difficult to 
+		// debug when tests fail.
 		boolean result = false;
 		List<String> anAuthorBits = tokenizeAuthorship(anAuthor);
 		List<String> toOtherAuthorBits = tokenizeAuthorship(toOtherAuthor);
-System.out.println (anAuthor + " " + toOtherAuthor + " " + anAuthorBits.size() + " " + toOtherAuthorBits.size()); 
 		if (anAuthorBits.size() == toOtherAuthorBits.size()) { 
 			Iterator<String> iA = anAuthorBits.iterator();
 			Iterator<String> iO = toOtherAuthorBits.iterator();
@@ -161,7 +163,6 @@ System.out.println (anAuthor + " " + toOtherAuthor + " " + anAuthorBits.size() +
 	    			    // then assume that the shorter isn't an abbreviation and 
 	    				// declare a missmatch.
 	    				foundMissmatch = true;
-System.out.println('1' + shorter + " " + longer);	    				
 	    			}
 	    		}
 				if (!anAuthorBit.equals(toOtherAuthorBit)) {
@@ -171,7 +172,6 @@ System.out.println('1' + shorter + " " + longer);
 					if (!initA.equals(initO)) { 
 						if (initA.length()==initO.length() && initA.length()>0) { 
 							foundMissmatch = true;
-System.out.println('2' + anAuthorBit + " " + toOtherAuthorBit);	    				
 						}
 					}
 					// remove punctuation.
@@ -201,17 +201,14 @@ System.out.println('2' + anAuthorBit + " " + toOtherAuthorBit);
 					List<String> toOtherAuthorSubBits = Arrays.asList(toOtherAuthorBit.trim().split(" "));
 					if (anAuthorSubBits.size()!=toOtherAuthorSubBits.size()) { 
 	    				foundMissmatch = true;
-System.out.println('3' + anAuthorBit + " " + toOtherAuthorBit);	    				
 					} else { 
 						Iterator<String> iAsb = anAuthorSubBits.iterator();
 						Iterator<String> iOsb = toOtherAuthorSubBits.iterator();
 						while (iAsb.hasNext()) { 
 							String subBit = iAsb.next();
 							String otherSubBit = iOsb.next();
-System.out.println(' ' + subBit + " " + otherSubBit);	    				
 							if (!compareSameOrStartsWith(subBit,otherSubBit)) { 
 								foundMissmatch = true;
-System.out.println('4' + anAuthorBit + " " + toOtherAuthorBit);	    				
 							}
 						}
 					}
@@ -219,7 +216,6 @@ System.out.println('4' + anAuthorBit + " " + toOtherAuthorBit);
 			}
 			result = !foundMissmatch;
 		}
-System.out.println(">> "+ result);	    				
 		return result;
 	}
 	
