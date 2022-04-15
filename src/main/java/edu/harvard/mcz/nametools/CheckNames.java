@@ -54,7 +54,7 @@ public class CheckNames {
 	
 	private static final Log log = LogFactory.getLog(CheckNames.class);
 	
-	public static final String VERSION = "0.1.5";
+	public static final String VERSION = "0.1.6";
 	
 	public static final String ACTION_HARVEST = "harvest";
 	public static final String ACTION_VALIDATE = "validate";
