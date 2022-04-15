@@ -84,13 +84,16 @@ public class IFDataSource implements Validator, Harvester {
 							if (authorship!=null && authorship.equals(taxonNameUsage.getAuthorship())) { 
 								String uuid = mei.getChildElement(new QName("UUID")).getValue();
 								String recnum = mei.getChildElement(new QName("RECORD_x0020_NUMBER")).getValue();
-								System.out.println("\"" + taxonName + "\", \"urn:uuid:" + uuid + "\",\"urn:lsid:indexfungorum.org:names:" + recnum +  "\"");
+								String lsid = "urn:lsid:indexfungorum.org:names:" + recnum;
+								log.debug("\"" + taxonName + "\", \"urn:uuid:" + uuid + "\",\"" + lsid +  "\"");
 								result = new NameUsage("IndexFungorum");
 								result.setScientificName(taxonName);
 								result.setKey(Integer.parseInt(recnum));
-								result.setGuid("urn:uuid:" + uuid);
+								result.setGuid(lsid);
+								result.setSourceID("urn:uuid:"+ uuid);
 								result.setAuthorship(authorship);
 								result.setMatchDescription(NameUsage.MATCH_EXACT);
+								result.setAuthorshipStringEditDistance(1d);
 								result.setInputDbPK(taxonNameUsage.getInputDbPK());
 								result.setOriginalScientificName(taxonNameUsage.getScientificName());
 								result.setOriginalAuthorship(taxonNameUsage.getAuthorship());
@@ -100,13 +103,16 @@ public class IFDataSource implements Validator, Harvester {
 								if (similarity>.75d) { 
 									String uuid = mei.getChildElement(new QName("UUID")).getValue();
 									String recnum = mei.getChildElement(new QName("RECORD_x0020_NUMBER")).getValue();
-									System.out.println("\"" + taxonName + "\", \"urn:uuid:" + uuid + "\",\"urn:lsid:indexfungorum.org:names:" + recnum +  "\"");
+								    String lsid = "urn:lsid:indexfungorum.org:names:" + recnum;
+									log.debug("\"" + taxonName + "\", \"urn:uuid:" + uuid + "\",\"" + lsid +  "\"");
 									result = new NameUsage("IndexFungorum");
 									result.setScientificName(taxonName);
 									result.setKey(Integer.parseInt(recnum));
-									result.setGuid("urn:uuid:" + uuid);
+									result.setGuid(lsid);
+									result.setSourceID("urn:uuid:"+ uuid);
 									result.setAuthorship(authorship);
 									result.setMatchDescription(NameUsage.MATCH_AUTHSIMILAR);
+									result.setAuthorshipStringEditDistance(similarity);
 								    result.setInputDbPK(taxonNameUsage.getInputDbPK());
 								    result.setOriginalScientificName(taxonNameUsage.getScientificName());
 								    result.setOriginalAuthorship(taxonNameUsage.getAuthorship());
@@ -118,11 +124,9 @@ public class IFDataSource implements Validator, Harvester {
 				}
 			}
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage(),e);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage(),e);
 		}
 		return result;
 	}

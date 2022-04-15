@@ -17,6 +17,22 @@ import org.supercsv.quote.AlwaysQuoteMode;
 import org.supercsv.quote.QuoteMode;
 import org.supercsv.util.CsvContext;
 
+/**
+ * Representation of a usage of a scientific name, suitable for validation of names against 
+ * authoritative sources.  Derived from an object that can handle NameUsage serializations 
+ * returned from GBIF's API, with extensions to support similar data objects returned by 
+ * the WoRMS aphia API, and by IndexFungorum, along with extensions to support metadata about 
+ * an original pre-validation record and the comparision between pre- and post- validation 
+ * records.
+ * 
+ * Has responsibility for NameUsage data objects, serialization of those objects, comparison 
+ * between values (e.g. authorships) between name usages, and assertion of constants describing
+ * the nature of such comparisons.  Needs re-engineering.
+ * 
+ * @author mole
+ *
+ * $Id: NameUsage.java 453 2015-03-24 00:39:18Z mole $ 
+ */
 public class NameUsage  {
 	
 	public static final String MATCH_ERROR = "Error in making comparison";

@@ -1,3 +1,9 @@
+/**
+ * CheckNames.java
+ * 
+ * 
+ * Author: Paul J. Morris
+ */
 package edu.harvard.mcz.nametools;
 
 import java.io.BufferedReader;
@@ -24,12 +30,19 @@ import org.filteredpush.util.CurationException;
 import org.supercsv.io.CsvListReader;
 import org.supercsv.prefs.CsvPreference;
 
+/**
+ * Launch the nameTools scientific name string validation and harvesting toolkit.
+ * 
+ * @author mole
+ *
+ * $Id: CheckNames.java 453 2015-03-24 00:39:18Z mole $
+ */
 public class CheckNames {
 	
 	
 	private static final Log log = LogFactory.getLog(CheckNames.class);
 	
-	public static final String VERSION = "0.0.5";
+	public static final String VERSION = "0.0.6";
 	
 	public static final String ACTION_HARVEST = "harvest";
 	public static final String ACTION_VALIDATE = "validate";
@@ -41,10 +54,10 @@ public class CheckNames {
         CommandLineParser parser = new PosixParser();
         Options options = new Options();
         options.addOption("taxon",true,"Taxon to validate or to harvest children of.");
-        options.addOption("infile",true,"File containing taxon names to validate.  Assumes a csv file, first three columns being dbpk, scientificname, authorship.");
+        options.addOption("infile",true,"File containing taxon names to validate.  Assumes a csv file, first three columns being dbpk, scientificname, authorship, columns after the third are ignored.  Used only in validation.");
         options.addOption("action",true,"Action to take, validate or harvest.");
         options.getOption("action").setRequired(true);
-        options.addOption("service",true,"Webservice to invoke, WoRMS, IF, or GBIF, default is WoRMS.");
+        options.addOption("service",true,"Webservice to invoke, WoRMS, IPNI, IF, GBIF, or COL, default is WoRMS.  GBIF uses the GBIF backbone taxonomy, COL uses the annual snapshot of COL in GBIF.  Not all services have both validation and harvest available.");
         options.addOption("help",false,"Help message.");
         
         String start = "Plumatellida";
@@ -73,6 +86,10 @@ public class CheckNames {
         			action = CheckNames.ACTION_HARVEST;
         		} else if (cmd.getOptionValue("action").equalsIgnoreCase("validate")) { 
         			action = CheckNames.ACTION_VALIDATE;
+        	        if (cmd.hasOption("infile")) {
+        	        	log.error("-action harvest does not use infile, -taxon specifies starting point for harvest.");
+        	        	log.error("-infile  " + cmd.getOptionValue("infile") + " will be ignored." );
+        	        }
         		} else { 
         			throw new ParseException("unrecognized option to -action given: -action {validate|harvest}.");
         		}
@@ -93,7 +110,6 @@ public class CheckNames {
 
         if (action.equals(CheckNames.ACTION_VALIDATE)) {
         	// Validate
-        	
         	// Step 1: Load names to validate (one from command line option, or list from file).
         	ArrayList<NameUsage> targets = new ArrayList<NameUsage>();
     		if (inputFileName!=null) { 
@@ -140,7 +156,8 @@ public class CheckNames {
 				}
     			targets.add(usage);
     		}
-    		// Validate, Step 2: Validate name(s) in list against services
+    		// Validate
+    		// Step 2: Validate name(s) in list against services
     		Iterator<NameUsage> validationIterator = targets.iterator(); 
         	switch (service.toLowerCase()) 
         	{ 
@@ -174,8 +191,22 @@ public class CheckNames {
         		IFDataSource ifds;
 				try {
 					ifds = new IFDataSource();
+					System.out.println(NameUsage.briefCsvHeaderLine());
 					while (validationIterator.hasNext())  { 
-        		       ifds.validate(validationIterator.next());
+						NameUsage toValidate = validationIterator.next();
+						NameUsage result = ifds.validate(toValidate);
+						if (result!=null) {
+							System.out.println(result.toBriefCsvLine());
+							if (result.getScientificName().equals(toValidate)) {
+								log.debug(result.getGuid());
+							} else { 
+								log.debug("Not matched");
+							}
+						} else { 
+							toValidate.setMatchDescription("Not Found");
+							log.debug("Not found");
+							System.out.println(toValidate.toBriefCsvLine());
+						}        		       
 					}
 				} catch (IOException e1) {
 					log.error(e1.getMessage(),e1);
@@ -246,7 +277,10 @@ public class CheckNames {
         	switch (service.toLowerCase()) 
         	{ 
         	case "if":
-        		System.out.println("Not implemented yet.");
+        		System.out.println("Not implemented.");
+        		break;
+        	case "ipni":
+        		System.out.println("Not implemented.");
         		break;
         	case "col":	
                 gbif_checklist = GBIFDataSource.KEY_COL;

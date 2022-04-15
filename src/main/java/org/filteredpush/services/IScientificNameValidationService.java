@@ -1,5 +1,11 @@
 package org.filteredpush.services;
 
+/**
+ * Interface for curation services that support validation of scientific names
+ * 
+ * @author Lei Dou
+ *
+ */
 public interface IScientificNameValidationService extends ICurationWithFileService {
 	
 	public void validateScientificName(String scientificName, String author);
