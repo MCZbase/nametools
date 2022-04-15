@@ -199,7 +199,7 @@ public class IPNIService implements IScientificNameValidationService {
 			   comment = "An authorship is suggested where none was provided.  " + match.getMatchDescription();
 			   curationStatus = CurationComment.CURATED;
 			} else if (match.getMatchDescription().equals(NameComparison.MATCH_ERROR) 
-					|| match.getMatchDescription().equals(NameComparison.MATCH_DISSIMILAR)) {
+					|| match.getMatchDescription().equals(NameComparison.MATCH_AUTHDISSIMILAR)) {
 				// no match to report
 				id = null;
 			} else { 
@@ -474,8 +474,6 @@ public class IPNIService implements IScientificNameValidationService {
 			            logger.debug(id);						
 					}
 				}
-				
-				strLine = responseReader.readLine();
 			}
 			responseReader.close();
             httpPost.releaseConnection();
@@ -520,11 +518,10 @@ public class IPNIService implements IScientificNameValidationService {
 			String id  = null;
 			String version = "";
 			BufferedReader responseReader = new BufferedReader(new InputStreamReader(response));
+			//skip the head
 			String strLine = responseReader.readLine();
             logger.debug(strLine);			
-			//skip the head
-			strLine = responseReader.readLine();
-			while(strLine != null){
+			while( (strLine = responseReader.readLine()) != null){
 	            logger.debug(strLine);			
 				String [] info = strLine.split("%");
 				if(info.length!=5){
@@ -548,8 +545,6 @@ public class IPNIService implements IScientificNameValidationService {
 			            logger.debug(id);						
 					}
 				}
-				
-				strLine = responseReader.readLine();
 			}
 			responseReader.close();
             httpPost.releaseConnection();

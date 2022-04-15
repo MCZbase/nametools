@@ -64,6 +64,8 @@ public class IPNIDataSource implements Validator {
 				log.debug(id);
 				log.debug(taxonName);
 				log.debug(authorship);
+				//TODO: Autonyms should not have authors.  Parse name, check if specific and lowest epithet are the same.
+				//Handle cases of autonym with author provided (might be author of species name) and not provided (correct).
 				
 				service.validateScientificName(taxonName, authorship);
 				if (service.getCurationStatus().equals(CurationComment.UNABLE_DETERMINE_VALIDITY) || service.getCurationStatus().equals(CurationComment.UNABLE_CURATED)) { 

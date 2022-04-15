@@ -19,12 +19,12 @@ package edu.harvard.mcz.nametools;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -87,9 +87,9 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 					if (similarity > similarityThreshold) { 
 						result.setMatchType(NameComparison.MATCH_AUTHSIMILAR);
 					} else if (similarity > weakThreshold) { 
-						result.setMatchType(NameComparison.MATCH_DISSIMILAR);
+						result.setMatchType(NameComparison.MATCH_AUTHDISSIMILAR);
 					} else { 
-						result.setMatchType(NameComparison.MATCH_STRONGDISSIMILAR);
+						result.setMatchType(NameComparison.MATCH_AUTHSTRONGDISSIMILAR);
 					}
 					double similarityAlpha = AuthorNameComparator.calulateSimilarityOfAuthorAlpha(anAuthor, toOtherAuthor);
 					boolean parenSame = ICNafpAuthorNameComparator.calculateHasParen(anAuthor)==ICNafpAuthorNameComparator.calculateHasParen(toOtherAuthor);
@@ -220,11 +220,53 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 		return result;
 	}
 	
+    /**
+     * Are anAuthor and anotherAuthor a known match for a small set of 
+     * unusual standard abbreviations linked to name and initials 
+     * (e.g. DC. for de Candolle). 
+     * 
+     * @param anAuthor
+     * @param anotherAuthor
+     * @return true if anAuthor and anotherAuthor form a known pair of
+     * name and abbreviation.
+     */
 	public static boolean knownMatch(String anAuthor, String anotherAuthor) {
 		boolean result = false;
-		if (  (anAuthor.equals("DC") && anotherAuthor.equals("de Candolle")) ||
-			  (anotherAuthor.equals("DC") && anAuthor.equals("de Candolle"))
-		   ) { 
+		
+		HashMap<String,String> knowns = new HashMap<String,String>();
+		knowns.put("DC", "de Candolle");
+		knowns.put("Decne", "Decaisne");
+		knowns.put("Decne", "J Decaisne");
+		knowns.put("Schltr", "Schlechter");
+		knowns.put("Michx", "Michaux");
+		knowns.put("Mendoza-García", "M Mendoza G");
+		knowns.put("L f", "C Linnaeus f");
+		knowns.put("Müll Arg", "J. Müller Arg");
+		knowns.put("Ruiz","H Ruíz L");
+		knowns.put("Germ","J N E Germain S-P");
+		knowns.put("Müll Berol","K Müller Berol");
+		knowns.put("Chick","J W Chickering, Jr");
+		knowns.put("Velez-Nauer","C Vélez N");
+		knowns.put("Ibarra-Manr","G Ibarra M");
+		knowns.put("Vera-Caletti","P Vera C");
+		knowns.put("Cházaro","M J Chazaro B");
+		knowns.put("Sahagun","E Sahagún G");
+		knowns.put("Marrero Rodr","A Marrero R");
+		knowns.put("Magalh","C T Magalhães G");
+		knowns.put("Lucas Rodr","R L Rodriguez C");
+		knowns.put("M Schultz","Schultz, M");
+		knowns.put("Hechav","L Hechavarría S");
+		knowns.put("FrancGut","J A Francisco Gut");
+		knowns.put("Karnk","A Karnkowska-Ish");
+		knowns.put("Sm","J E Smith");
+		knowns.put("Hue","A-M Hue");
+		knowns.put("Day","M A Day");
+		knowns.put("Fr","E M Fries");
+		
+		String m1 = knowns.get(anAuthor.replace(".", ""));
+		String m2 = knowns.get(anotherAuthor.replace(".", ""));
+		
+		if ((m1!=null && m1.equals(anotherAuthor)) || (m2!=null && m2.equals(anAuthor))) { 
 			result = true;
 		}
 		return result;
@@ -324,8 +366,7 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 			if (longer.replace(".", "").startsWith(shorter.replace(".", ""))) { 
 				result = true;
 			}
-			// Abbreviation DC for de Candolle
-			if (shorter.replace(".", "").equals("DC") && longer.equals("de Candolle")) { 
+			if (knownMatch(shorter.replace(".", ""), longer.replace(".",""))) { 
 				result = true;
 			}
 		    // Special case, for botany, L doesn't abbreviate Lamarck, only Linnaeus:
@@ -397,7 +438,7 @@ public class ICNafpAuthorNameComparator extends AuthorNameComparator {
 			}
 
 		}		
-		// string any leading/trailing spaces
+		// strip any leading/trailing spaces
 		for (int j=0; j<result.size(); j++) { 
 			result.set(j, result.get(j).trim());
 		}

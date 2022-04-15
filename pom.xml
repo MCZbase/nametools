@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.harvard.mcz</groupId>
 	<artifactId>nameTools</artifactId>
-	<version>0.1.4-SNAPSHOT</version>
+	<version>0.1.5</version>
 	<packaging>jar</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -67,9 +67,10 @@
 							<goal>single</goal>
 						</goals>
 						<configuration>
-						   <!-- indexfungorum.cabi.fungusserver path names often larger than 100 characters. -->
-						   <tarLongFileMode>gnu</tarLongFileMode>
-						   <!-- GNU extensions are used for any paths greater than the maximum. -->
+							<!-- indexfungorum.cabi.fungusserver path names often larger than 
+								100 characters. -->
+							<tarLongFileMode>gnu</tarLongFileMode>
+							<!-- GNU extensions are used for any paths greater than the maximum. -->
 						</configuration>
 					</execution>
 				</executions>
@@ -172,6 +173,16 @@
 			<groupId>jaxen</groupId>
 			<artifactId>jaxen</artifactId>
 			<version>1.1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.json</groupId>
+			<artifactId>javax.json-api</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.json</artifactId>
+			<version>1.0.4</version>
 		</dependency>
 	</dependencies>
 </project>

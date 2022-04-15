@@ -20,6 +20,8 @@ package edu.harvard.mcz.nametools;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -53,7 +55,7 @@ import org.supercsv.util.CsvContext;
  * 
  * @author mole
  *
- * $Id: NameUsage.java 469 2015-03-27 20:32:26Z mole $ 
+ * $Id: NameUsage.java 490 2015-06-22 20:56:57Z mole $ 
  */
 public class NameUsage implements LinneanClassification {
 	
@@ -85,7 +87,7 @@ public class NameUsage implements LinneanClassification {
 	private String unacceptReason;   // Aphia metadata
 	private String guid;             // GUID for the name usage
 	
-	private String matchDescription;  // metadata, description of the match between this name usage annd the original
+	private String matchDescription;  // metadata, description of the match between this name usage and the original
 	private double authorshipStringSimilarity;
 	private double scientificNameStringSimilarity;
 	
@@ -138,6 +140,7 @@ public class NameUsage implements LinneanClassification {
 		this.setGuid("urn:lsid:marinespecies.org:taxname:" + Integer.toString(record.getAphiaID()));
 		this.setTaxonomicStatus(record.getStatus());
 		this.setUnacceptReason(record.getUnacceptreason());
+		fixAuthorship();
 	}
 	
 	/**
@@ -162,6 +165,7 @@ public class NameUsage implements LinneanClassification {
 		this.setOrder(record.getOrder());
 		this.setFamily(record.getFamily());
 		this.setGenus(record.getGenus());		
+		fixAuthorship();
 	}
 	
 	
@@ -216,8 +220,46 @@ public class NameUsage implements LinneanClassification {
 			genus = getValFromKey(json,"genus");
 			sourceID = getValFromKey(json,"sourceId");
 			link = getValFromKey(json,"link");
+			fixAuthorship();
 		}
 	}
+	
+	/**
+	 * Fix certain known cases of errors in the formulation of an 
+	 * authorship string, sensitive to relevant nomenclatural code.
+	 * Remove authorship from scientific name if present.
+	 */
+	public void fixAuthorship() { 
+		log.debug(authorship);
+		log.debug(scientificName);
+		if (authorship!=null) { 
+			if (scientificName != null && scientificName.contains(authorship)) { 
+				scientificName.replace(authorship, "");
+			    scientificName = scientificName.trim();
+			}
+			authorship = authorship.trim();
+			if (kingdom.equals("Animalia")) { 
+				if (ICZNAuthorNameComparator.containsParenthesies(authorship)) { 
+					// Fix pathological case sometimes returned by COL: Author (year)
+					// which should be (Author, year).
+					
+					//^([A-Za-z., ]+)[, ]*\(([0-9]{4})\)$
+					Pattern p = Pattern.compile("^([A-Za-z., ]+)[, ]*\\(([0-9]{4})\\)$");
+					Matcher matcher = p.matcher(authorship);
+					if (matcher.matches()) { 
+					   StringBuffer retval = new StringBuffer();
+					   retval.append("(");
+					   retval.append(matcher.group(1).trim());
+					   retval.append(", ");
+					   retval.append(matcher.group(2));
+					   retval.append(")");
+	 				   authorship = retval.toString().trim();
+					}
+				}
+			}
+		}
+	}
+	
 	
 	public static String briefCsvHeaderLine() { 
 		return "\"dbpk\",\"scientificName\",\"authorship\"," +

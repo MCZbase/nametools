@@ -44,7 +44,7 @@ public class TestICNafpAuthorNameComparator {
 		assertEquals(NameComparison.MATCH_AUTHSIMILAR, comparator.compare("(Persoon) P. Kummer: Fries","(Persoon) Ze Kummer: Fries").getMatchType());
 		
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("L.","Linnaeus").getMatchType());
-		assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare("L.","Lamarck").getMatchType());
+		assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare("L.","Lamarck").getMatchType());
 		
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("(Persoon) P. Kummer: Fries","(Persoon) Kummer: Fries").getMatchType());
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("(J. C. Schmidt) Coker & Beers ex Pouzar: Fries","(Schmidt) Coker & Beers ex Pouzar: Fries").getMatchType());
@@ -58,21 +58,25 @@ public class TestICNafpAuthorNameComparator {
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("(J. C. Schmidt) Coker & Beers ex Pouzar: Fries","(Schmidt) Coker & Beers ex Pouzar: Fr.").getMatchType());
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare( "(Schmidt) Coker & Beers ex Pouzar: Fr." , "(J. C. Schmidt) Coker & Beers ex Pouzar: Fries").getMatchType());
 		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare( "Fries" , "Fr.").getMatchType());
-		assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare( "Fries" , "Fr").getMatchType());
+		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("(DC.) A.T.Richardson","(de Candolle) A.T.Richardson").getMatchType());
+		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("(DC.) A.T.Richardson","(de Candolle) A. T. Richardson").getMatchType());
+		assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare( "Fries" , "Fr").getMatchType());
         assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("Pouzar","P.").getMatchType());
-		assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare( "Pouzar" , "P").getMatchType());
+		assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare( "Pouzar" , "P").getMatchType());
 		
 		assertEquals(NameComparison.MATCH_EXACT, comparator.compare("Conrad ", "Conrad").getMatchType());
 		assertEquals(NameComparison.MATCH_EXACT, comparator.compare("J.C. Schmidt", "J. C. Schmidt").getMatchType());
 		
+		assertEquals(NameComparison.MATCH_SAMEBUTABBREVIATED, comparator.compare("Sm.","J. E. Smith").getMatchType());
+		
 		// too much string difference
-		assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare("(J. C. Schmidt) Coker & Beers ex Pouzar: Fries","(Schmi.) R. C. Cok. & A. Bee. ex R. Pouz.: Fr.").getMatchType());
-	    assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare("Pouzar","Fries").getMatchType());
+		assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare("(J. C. Schmidt) Coker & Beers ex Pouzar: Fries","(Schmi.) R. C. Cok. & A. Bee. ex R. Pouz.: Fr.").getMatchType());
+	    assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare("Pouzar","Fries").getMatchType());
 	    assertEquals(.0000000d, comparator.compare("Pouzar","Fries").getSimilarity(),.000001d);
-	    assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare("Pouzar","Poies").getMatchType());
-	    assertEquals(NameComparison.MATCH_STRONGDISSIMILAR, comparator.compare("Pouzar","Pouies").getMatchType());
+	    assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare("Pouzar","Poies").getMatchType());
+	    assertEquals(NameComparison.MATCH_AUTHSTRONGDISSIMILAR, comparator.compare("Pouzar","Pouies").getMatchType());
 	    assertEquals(.5d, comparator.compare("Pouzar","Pouies").getSimilarity(),.000001d);
-	    assertEquals(NameComparison.MATCH_DISSIMILAR, comparator.compare("Pouzar","Pouzes").getMatchType());
+	    assertEquals(NameComparison.MATCH_AUTHDISSIMILAR, comparator.compare("Pouzar","Pouzes").getMatchType());
 	    assertEquals(.6666666d, comparator.compare("Pouzar","Pouzes").getSimilarity(),.000001d);
 	    assertEquals(NameComparison.MATCH_AUTHSIMILAR, comparator.compare("Pouzar","Pouzas").getMatchType());
 	    assertEquals(.8333333333d, comparator.compare("Pouzar","Pouzas").getSimilarity(),.000001d);

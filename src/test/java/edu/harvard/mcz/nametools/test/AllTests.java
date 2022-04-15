@@ -7,6 +7,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({ 
 	GBIFHarvesterTest.class, 
+	NameUsageTest.class,
 	TestICZNAuthorNameComparator.class, 
 	TestICNafpAuthorNameComparator.class 
 	})

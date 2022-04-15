@@ -11,8 +11,8 @@ public class NameComparison {
 	public static final String MATCH_ERROR = "Error in making comparison";
 	public static final String MATCH_CONNECTFAILURE = "Error connecting to service";
 	public static final String MATCH_FUZZY_SCINAME = "Fuzzy Match on Scientific Name";
-	public static final String MATCH_DISSIMILAR = "Author Dissimilar";
-	public static final String MATCH_STRONGDISSIMILAR = "Author Strongly Dissimilar";
+	public static final String MATCH_AUTHDISSIMILAR = "Author Dissimilar";
+	public static final String MATCH_AUTHSTRONGDISSIMILAR = "Author Strongly Dissimilar";
 	/**
 	 * Zoological, "Sowerby" in one case, Sowerby I, Sowerby II, or Sowerby III in the other,
 	 * specification of which of the Sowerby family was the author was added.
@@ -51,6 +51,8 @@ public class NameComparison {
      * between the strings can be explained by differences in abbreviation or addition/removal of initials.
      */
 	public static final String MATCH_SAMEBUTABBREVIATED = "Same Author, but abbreviated differently.";
+	
+	public static final String SNMATCH_SUBGENUS = "Same name, but with subgenus present in one case.";
 	
 	private String nameOne;
 	private String nameTwo;

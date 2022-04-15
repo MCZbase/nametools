@@ -25,8 +25,10 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.axis.AxisFault;
 import org.apache.commons.logging.Log;
@@ -36,6 +38,7 @@ import org.gbif.nameparser.NameParser;
 import org.gbif.nameparser.UnparsableException;
 import org.marinespecies.aphia.v1_0.AphiaNameServicePortTypeProxy;
 import org.marinespecies.aphia.v1_0.AphiaRecord;
+import org.marinespecies.aphia.v1_0.Source;
 import org.supercsv.io.CsvListWriter;
 import org.supercsv.io.ICsvListWriter;
 import org.supercsv.prefs.CsvPreference;
@@ -410,5 +413,59 @@ public class WoRMSDataSource implements Harvester, Validator {
 		depth--;
 		return result;
 	}
+	
+	public void findCitations(NameUsage toCheck) {
+		String taxonName = toCheck.getScientificName();
+		String authorship = toCheck.getAuthorship();
+		toCheck.setAuthorComparator(authorNameComparator);
+		try {
+			AphiaRecord[] resultsArr = wormsService.getAphiaRecords(taxonName, false, false, false, 1);
+			List<AphiaRecord> results = Arrays.asList(resultsArr);
+			log.debug(resultsArr.length);
+			Iterator<AphiaRecord> i = results.iterator();
+			while(i.hasNext()) { 
+				AphiaRecord record = i.next();
+				int id = record.getAphiaID();
+				Source[] sourceArr = wormsService.getSourcesByAphiaID(id);
+				List<Source> sources = Arrays.asList(sourceArr);
+				Iterator<Source> is = sources.iterator();
+				while (is.hasNext()) { 
+					Source source = is.next();
+					if (source.getUse().equals("original description")) { 
+				        System.out.println(source.getUse());  // type of source, e.g. original description.
+				        System.out.println(source.getReference()); // the citation for the work as a string
+				        System.out.println(source.getPage());     // page in reference on which the original description is found
+						System.out.println(source.getFulltext()); // full text of original citation 
+						System.out.println(source.getUrl());   // uri for publication record in worms
+						System.out.println(source.getLink());  // link to source document e.g. bhl
+					}
+				}
+			}
+		} catch (RemoteException e) {
+			log.error(e.getMessage(),e);
+		}		
+		
+	}
 
+	public Map<String,String> getOriginalCitation(int aphiaId) { 
+		HashMap<String,String> result = new HashMap<String,String>();
+		Source[] sourceArr;
+		try {
+			sourceArr = wormsService.getSourcesByAphiaID(aphiaId);
+			List<Source> sources = Arrays.asList(sourceArr);
+			Iterator<Source> is = sources.iterator();
+			while (is.hasNext()) { 
+				Source source = is.next();
+				if (source.getUse().equals("original description")) {
+					result.put("work", source.getReference());
+					result.put("page", source.getPage());
+					result.put("link", source.getLink());
+				}
+			}
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		return result;
+	}
+	
 }

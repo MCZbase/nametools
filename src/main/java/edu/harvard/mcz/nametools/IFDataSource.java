@@ -84,6 +84,8 @@ public class IFDataSource implements Validator, Harvester {
 		NameUsage result = null;
 		String taxonName = taxonNameUsage.getScientificName();
 		try {
+			//TODO: Autonyms should not have authors.  Parse name, check if specific and lowest epithet are the same.
+			//Handle cases of autonym with author provided (might be author of species name) and not provided (correct).
 			NameSearchResponseNameSearchResult searchResult = ifService.nameSearch(taxonName, false, 2);
 			if (searchResult!=null) { 
 				List<MessageElement> mes = Arrays.asList(searchResult.get_any());

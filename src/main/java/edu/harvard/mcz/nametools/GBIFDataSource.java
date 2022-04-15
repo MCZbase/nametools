@@ -50,6 +50,8 @@ import org.supercsv.quote.ColumnQuoteMode;
 import org.supercsv.quote.QuoteMode;
 
 /**
+ * Wrapper for accessing the GBIF API to search for scientific names. 
+ * 
  * See service documentation at: http://dev.gbif.org/wiki/display/POR/Webservice+API#WebserviceAPI-ChecklistBankServices:Nameusage
  * 
  * @author mole
@@ -136,8 +138,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				result.append(line);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 
 
@@ -162,8 +163,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				result.append(line);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 
 		return result.toString();
@@ -225,8 +225,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				result.append(line);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 		if (result.toString().equals("{\"offset\":0,\"limit\":1000,\"endOfRecords\":true,\"results\":[]}") &&
 				targetChecklist.equals("bf3db7c9-5e5d-4fd0-bd5b-94539eaf9598"))
@@ -254,8 +253,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				result.append(line);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 
 
@@ -291,11 +289,11 @@ public class GBIFDataSource implements Harvester, Validator {
 			}
  
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			log.error(e.getMessage());
 		}
 		// TODO: Report not getting all records.
 		if (!gotAll) { 
+			log.error("Incomplete Harvest");
 			System.out.println("Incomplete Harvest");
 		}
 		
@@ -394,8 +392,8 @@ public class GBIFDataSource implements Harvester, Validator {
 						try {
 							nameBits = parser.parse(usage.getScientificName());
 						} catch (UnparsableException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							// TODO: What is expected behavior of this method if scientific name can't be parsed (e.g. hybrids)?
+							log.error(e.getMessage());
 						}						
 						
 						//"KINGDOM","PHYLUM","PHYLCLASS","PHYLORDER","FAMILY","GENUS",
@@ -455,7 +453,7 @@ public class GBIFDataSource implements Harvester, Validator {
 						if (usage.getKingdom().equals("Animalia")) { 
 							output.add("ICZN");  //  nomenclatural code  
 						} else { 
-							//TODO: Determine kingdom to code mappings for other roots in WoRMS
+							//TODO: Determine kingdom to code mapping
 							output.add("ICNafp");	
 						}
 						output.add(usage.getTaxonomicStatus()); //  taxon_status
@@ -514,7 +512,12 @@ public class GBIFDataSource implements Harvester, Validator {
 	public NameUsage validate(NameUsage taxonNameToValidate) {
 		NameUsage result = null;
 		if (taxonNameToValidate!=null) {
-			String taxonName = taxonNameToValidate.getScientificName();
+			// TODO: Handle autonyms of botanical names (should not have an authorship).
+			String taxonName = taxonNameToValidate.getCanonicalName();
+			if (taxonName==null || taxonName.length()==0) { 
+				taxonName = taxonNameToValidate.getScientificName();
+				taxonNameToValidate.setCanonicalName(taxonName);
+			}
 			String authorship = taxonNameToValidate.getAuthorship();
 			List<NameUsage> hits = GBIFDataSource.parseAllNameUsagesFromJSON(GBIFDataSource.searchForTaxon(taxonName, targetKey));
 			if (hits==null || hits.size()==0) { 
@@ -527,7 +530,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				if (potentialMatch.getKingdom().equals("Animalia")) { 
 				    authorNameComparator = new ICZNAuthorNameComparator(.75d,.5d);
 				}
-				if (potentialMatch.getScientificName().equals(taxonName) && potentialMatch.getAuthorship().equals(authorship)) { 
+				if (potentialMatch.getCanonicalName().equals(taxonName) && potentialMatch.getAuthorship().equals(authorship)) { 
 					potentialMatch.setMatchDescription(NameComparison.MATCH_EXACT);
 					result = potentialMatch;
 				    result.setAuthorshipStringEditDistance(1d);
@@ -545,7 +548,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				result.setInputDbPK(taxonNameToValidate.getInputDbPK());
 				result.setScientificNameStringEditDistance(1d);
 				result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
-				result.setOriginalScientificName(taxonNameToValidate.getScientificName());
+				result.setOriginalScientificName(taxonNameToValidate.getCanonicalName());
 			} else { 
 				// multiple possible matches
 			    Iterator<NameUsage> i = hits.iterator();
@@ -556,6 +559,7 @@ public class GBIFDataSource implements Harvester, Validator {
 			        NameUsage potentialMatch = i.next();
 				    matches.add(potentialMatch);
 				    log.debug(potentialMatch.getScientificName());
+				    log.debug(potentialMatch.getCanonicalName());
 				    log.debug(potentialMatch.getKey());
 				    log.debug(potentialMatch.getAuthorship());
 				    log.debug(potentialMatch.getTaxonomicStatus());
@@ -567,7 +571,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				    		result.setMatchDescription(NameComparison.MATCH_EXACT);
 				    		result.setAuthorshipStringEditDistance(1d);
 				    		result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
-				    		result.setOriginalScientificName(taxonNameToValidate.getScientificName());
+				    		result.setOriginalScientificName(taxonNameToValidate.getCanonicalName());
 				    		result.setScientificNameStringEditDistance(1d);
 				    		exactMatch = true;
 				    	}
@@ -592,7 +596,7 @@ public class GBIFDataSource implements Harvester, Validator {
 				    result.setInputDbPK(taxonNameToValidate.getInputDbPK());
 				    result.setMatchDescription(NameComparison.MATCH_MULTIPLE + " " + names.toString());
 				    result.setOriginalAuthorship(taxonNameToValidate.getAuthorship());
-				    result.setOriginalScientificName(taxonNameToValidate.getScientificName());
+				    result.setOriginalScientificName(taxonNameToValidate.getCanonicalName());
 				    result.setScientificNameStringEditDistance(1d);
 				    result.setAuthorshipStringEditDistance(taxonNameToValidate.getAuthorComparator().calulateSimilarityOfAuthor(taxonNameToValidate.getAuthorship(), result.getAuthorship()));
 					}
@@ -601,7 +605,8 @@ public class GBIFDataSource implements Harvester, Validator {
 		}
 		if (result!=null) { 
 			// GBIF includes the authorship in the scientific name.
-			result.setScientificName(result.getScientificName().replaceAll(result.getAuthorship() + "$", ""));
+			// result.setScientificName(result.getScientificName().replaceAll(result.getAuthorship() + "$", ""));
+			result.setScientificName(result.getCanonicalName());
 			// set a guid for the gbif records
 			result.setGuid("http://api.gbif.org/v1/species/" + Integer.toString(result.getKey()));
 		}

@@ -48,13 +48,13 @@ import org.supercsv.prefs.CsvPreference;
  * 
  * @author mole
  *
- * $Id: CheckNames.java 472 2015-03-28 01:42:57Z mole $
+ * $Id: CheckNames.java 482 2015-04-21 16:58:48Z mole $
  */
 public class CheckNames {
 	
 	private static final Log log = LogFactory.getLog(CheckNames.class);
 	
-	public static final String VERSION = "0.1.4-SNAPSHOT";
+	public static final String VERSION = "0.1.5";
 	
 	public static final String ACTION_HARVEST = "harvest";
 	public static final String ACTION_VALIDATE = "validate";
@@ -69,7 +69,7 @@ public class CheckNames {
         options.addOption("infile",true,"File containing taxon names to validate.  Assumes a csv file, first three columns being dbpk, scientificname, authorship, columns after the third are ignored.  Used only in validation.");
         options.addOption("action",true,"Action to take, validate or harvest.");
         options.getOption("action").setRequired(true);
-        options.addOption("service",true,"Webservice to invoke, WoRMS, IPNI, IF, GBIF, or COL, default is WoRMS.  GBIF uses the GBIF backbone taxonomy, COL uses the annual snapshot of COL in GBIF.  Not all services have both validation and harvest available.");
+        options.addOption("service",true,"Webservice to invoke, WoRMS, IPNI, IF, ZooBank, WoRMS+ZooBank, GBIF, or COL, default is WoRMS+ZooBank.  GBIF uses the GBIF backbone taxonomy, COL uses the annual snapshot of COL in GBIF.  Not all services have both validation and harvest available.");
         options.addOption("help",false,"Help message.");
         
         String start = "Plumatellida";
@@ -249,13 +249,40 @@ public class CheckNames {
         				}
         			}
         		} catch (IOException e) {
-        			log.error("Unable to connect to WoRMS service.");
+        			log.error("Unable to connect to GBIF service.");
         			log.debug(e.getClass().toString() + ":" + e.getMessage());
         			resultCode = 1;
         		}           
         		break;
+        	case "zoobank":
+        		ZooBankDataSource zoobank;
+        		try {
+        			zoobank = new ZooBankDataSource();
+        			System.out.println(NameUsage.briefCsvHeaderLine());
+        			while (validationIterator.hasNext()) { 
+        				NameUsage toValidate = validationIterator.next();
+        				NameUsage result = zoobank.validate(toValidate);
+        				if (result!=null) {
+        					if (result.getScientificName().equals(toValidate)) {
+        						System.out.println(result.toBriefCsvLine());
+        						log.debug(result.getGuid());
+        					} else { 
+        						System.out.println(result.toBriefCsvLine());
+        						log.debug("Not matched");
+        					}
+        				} else { 
+        					toValidate.setMatchDescription("Not Found");
+        					log.debug("Not found");
+        					System.out.println(toValidate.toBriefCsvLine());
+        				}
+        			}
+        		} catch (IOException e) {
+        			log.error("Unable to connect to ZooBank service.");
+        			log.debug(e.getClass().toString() + ":" + e.getMessage());
+        			resultCode = 1;
+        		}           
+        		break;        		
         	case "worms":
-        	default:
         		WoRMSDataSource worms;
         		try {
         			worms = new WoRMSDataSource();
@@ -279,6 +306,52 @@ public class CheckNames {
         			}
         		} catch (IOException e) {
         			log.error("Unable to connect to WoRMS service.");
+        			log.debug(e.getClass().toString() + ":" + e.getMessage());
+        			resultCode = 1;
+        		}           
+        		break;
+        	case "worms+zoobank":
+        	default:
+        		WoRMSDataSource wormsds;
+        	    ZooBankDataSource zoobankds;
+        		try {
+        			wormsds = new WoRMSDataSource();
+        	        zoobankds = new ZooBankDataSource();
+        			System.out.println(NameUsage.briefCsvHeaderLine());
+        			while (validationIterator.hasNext()) {
+        				boolean found = false;
+        				NameUsage toValidate = validationIterator.next();
+        				NameUsage result = wormsds.validate(toValidate);
+        				if (result!=null) {
+        					if (result.getScientificName().equals(toValidate)) {
+        						System.out.println(result.toBriefCsvLine());
+        						log.debug(result.getGuid());
+        						found = true;
+        					} else { 
+        						log.debug("Not matched");
+        					}
+        				} else { 
+        					log.debug("Not found");
+        				}
+        				if (!found) {
+        					result = zoobankds.validate(toValidate);
+        					if (result!=null) {
+        						if (result.getScientificName().equals(toValidate)) {
+        							System.out.println(result.toBriefCsvLine());
+        							log.debug(result.getGuid());
+        						} else { 
+        							System.out.println(result.toBriefCsvLine());
+        							log.debug("Not matched");
+        						}
+        					} else { 
+        						toValidate.setMatchDescription("Not Found");
+        						log.debug("Not found");
+        						System.out.println(toValidate.toBriefCsvLine());
+        					}
+        				}
+        			}
+        		} catch (IOException e) {
+        			log.error("Unable to connect to service.");
         			log.debug(e.getClass().toString() + ":" + e.getMessage());
         			resultCode = 1;
         		}           
