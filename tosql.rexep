@@ -1,1 +1,9 @@
 %s/^"\([0-9]*\)",".*",".*","\(urn:lsid:ipni.org:names:[-0-9]*\)","Exact.*$/update taxon set guid = '\2' where taxonid = \1;/
+
+%s/^"\([0-9]*\)",".*",".*","\(urn:lsid:marinespecies.org:taxname:[-0-9]*\)","Exact.*$/update taxonomy set taxonid_guid_type = 'WoRMS LSID', taxonid = '\2' where taxon_name_id = \1 and taxonid is null;/
+
+
+%s/^"\([0-9]*\)","[A-Z][a-z ]+","\(.*\)","\(urn:lsid:marinespecies.org:taxname:[-0-9]*\)","Exact.*$/update taxonomy set taxonid_guid_type = 'WoRMS LSID', taxonid = '\3', author_text='\2', taxon_remarks=taxon_remarks || ' authorship was:' || author_text where taxon_name_id = \1 and taxonid is null;/
+
+
+"93168","Clio pyramidata","Linnaeus, 1767","urn:lsid:marinespecies.org:taxname:139033","Fuzzy Match on Scientific Name; authorship Ambiguous L.","Cleo pyramidata","L.","0.08333333333333333"
